@@ -6,8 +6,8 @@ namespace Renderer
 
 	namespace Math
 	{
-		const double PI = 3.1427;
-		const double Infinity = std::numeric_limits<double>::infinity();
+		const float PI = 3.1427f;
+		const float Infinity = std::numeric_limits<float>::infinity();
 
 		template <typename T>
 		T Clamp(const T v, const T a, const T b)

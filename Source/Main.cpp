@@ -6,7 +6,7 @@
 using namespace Renderer;
 using namespace Renderer::Math;
 
-void SaveImage(const std::array<Matrix<double>, 3>& image, const std::string& path)
+void SaveImage(const std::array<Matrix<float>, 3>& image, const std::string& path)
 {
 	const int w = static_cast<int>(image[0].Columns());
 	const int h = static_cast<int>(image[0].Rows());
@@ -32,9 +32,9 @@ void SaveImage(const std::array<Matrix<double>, 3>& image, const std::string& pa
 	}
 }
 
-Matrix<double> LoadImage(const std::string& file)
+Matrix<float> LoadImage(const std::string& file)
 {
-	auto result = Matrix<double>();
+	auto result = Matrix<float>();
 	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(file.c_str());
 
 	if (format != FIF_UNKNOWN)
@@ -48,7 +48,7 @@ Matrix<double> LoadImage(const std::string& file)
 		BYTE* pixelData = NULL;
 		pixelData = FreeImage_GetBits(bitmapBlue);
 
-		result = Matrix<double>(height, width);
+		result = Matrix<float>(height, width);
 		for (unsigned int j = 0; j < area; ++j)
 		{
 			result[j] = pixelData[j];
@@ -60,9 +60,9 @@ Matrix<double> LoadImage(const std::string& file)
 	return result;
 }
 
-Matrix<double> GaussianKernel(const double multiplier)
+Matrix<float> GaussianKernel(const float multiplier)
 {
-	Matrix<double> kernel =
+	Matrix<float> kernel =
 	{ { 0.003765f,	0.015019f,	0.023792f,	0.015019f,	0.003765f },
 	{ 0.015019f,	0.059912f,	0.094907f,	0.059912f,	0.015019f },
 	{ 0.023792f,	0.094907f,	0.150342f,	0.094907f,	0.023792f },
@@ -84,7 +84,7 @@ int main()
 		s2->Radius = 3.0;
 		s3->Radius = 3.0;
 		s1->XForm.SetPosition({ -6.0, 0.0, 0.0 });
-		s2->XForm.SetPosition({ 0.0, 0.0, 0.0 });
+		s2->XForm.SetPosition({ 0.0, 0.0, -3.0 });
 		s3->XForm.SetPosition({ 6.0, 0.0, 0.0 });
 		s1->Material.Colour = { 1.0, 0.0, 0.0 };
 		s2->Material.Colour = { 0.0, 1.0, 0.0 };
@@ -105,8 +105,10 @@ int main()
 	int h = 256;
 	auto camera = Camera(w, h, 1.0, 0.01);
 	camera.SetAspectRatio(16.0, 9.0);
-	camera.XForm.SetPosition({0.0, 5.0, 20.0});
-	//camera.LookAt(Vector3());
+	camera.XForm.SetPosition({0.0, 15.0, 20.0});
+	
+	Vector3 target = { 0.0, 0.0, 0.0 };
+	camera.LookAt(target, Y_MINUS_AXIS);
 
 	auto render = RayTracer(objects, camera).Render(&SaveImage, "Render_Update.png");
 	//render[0].Transpose();
@@ -119,7 +121,8 @@ int main()
 
 	//auto image = LoadImage("../../../Common/Test_2.jpg");
 
-	std::cin;
+	int input;
+	std::cin >> input;
 
 	return 0;
 }

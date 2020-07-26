@@ -145,5 +145,5 @@ T Vector<T, SIZE>::AngleBetween(const Vector<T, SIZE>& other) const
 	return static_cast<T>(0);
 }
 
-template class Vector<double, 2>;
-template class Vector<double, 3>;
+template class Vector<float, 2>;
+template class Vector<float, 3>;

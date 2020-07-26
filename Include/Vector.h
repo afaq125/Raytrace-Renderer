@@ -11,7 +11,7 @@
 	return result; 
 
 #define CUSTOM_OPERATOR_VECTOR_EQUALS(f) \
-	std::transform(rhs.mData.begin(), rhs.mData.end(), this->mData.begin(), this->mData.begin(), f); \
+	std::transform(this->mData.begin(), this->mData.end(), rhs.mData.begin(), this->mData.begin(), f); \
 	return *this;
 
 #define CUSTOM_OPERATOR_VECTOR_T_EQUALS(f) \
@@ -83,11 +83,14 @@ namespace Renderer
 			std::array<T, SIZE> mData;
 		};
 
-		using Vector2 = Vector<double, 2>;
-		using Vector3 = Vector<double, 3>;
+		using Vector2 = Vector<float, 2>;
+		using Vector3 = Vector<float, 3>;
 
 		const Vector3 X_AXIS = { 1.0, 0.0, 0.0 };
 		const Vector3 Y_AXIS = { 0.0, 1.0, 0.0 };
 		const Vector3 Z_AXIS = { 0.0, 0.0, 1.0 };
+		const Vector3 X_MINUS_AXIS = { -1.0, 0.0, 0.0 };
+		const Vector3 Y_MINUS_AXIS = { 0.0, -1.0, 0.0 };
+		const Vector3 Z_MINUS_AXIS = { 0.0, 0.0, -1.0 };
 	}
 }

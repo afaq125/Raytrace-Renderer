@@ -11,7 +11,7 @@
 	return result; 
 
 #define CUSTOM_OPERATOR_MATRIX_EQUALS(f) \
-	std::transform(rhs.mData.begin(), rhs.mData.end(), this->mData.begin(), this->mData.begin(), f); \
+	std::transform(this->mData.begin(), this->mData.end(), rhs.mData.begin(), this->mData.begin(), f); \
 	return *this;
 
 #define CUSTOM_OPERATOR_MATRIX_T_EQUALS(f) \
@@ -129,7 +129,7 @@ namespace Renderer
 			~MatrixT() {}
 		};
 
-		using Matrix3 = MatrixT<double, 3, 3>;
-		using Matrix4 = MatrixT<double, 4, 4>;
+		using Matrix3 = MatrixT<float, 3, 3>;
+		using Matrix4 = MatrixT<float, 4, 4>;
 	}
 }

@@ -38,13 +38,13 @@ namespace Renderer
 			mPosition(position)
 		{
 			auto z = direction.Normalized();
-			auto y = z.CrossProduct(up);
-			auto x = z.CrossProduct(y);
+			auto y = z.CrossProduct(up).Normalized();
+			auto x = z.CrossProduct(y).Normalized();
 			for (Size i = 0; i < 3; ++i)
 			{
-				mAxis.Set(i, 0, x[i]);
-				mAxis.Set(i, 1, y[i]);
-				mAxis.Set(i, 2, z[i]);
+				mAxis.Set(i, 0, y[i]);
+				mAxis.Set(i, 1, z[i]);
+				mAxis.Set(i, 2, x[i]);
 			}
 		}
 
@@ -75,8 +75,8 @@ namespace Renderer
 		const Vector3& GetDirection() const { return mDirection; }
 		Vector3 Projection(const Vector3& position) const
 		{
-			const double distance = (position - mOrigin).DotProduct(mDirection);
-			return mOrigin + mDirection * distance;
+			const float distance = (position - mOrigin).DotProduct(mDirection);
+			return mOrigin + (mDirection * distance);
 		}
 		static Vector3 Reflection(const Vector3& normal, const Vector3& direction)
 		{
@@ -100,7 +100,7 @@ namespace Renderer
 
 	struct Grid
 	{
-		double Scale = 10.0;
+		float Scale = 10.0;
 		Vector3 Position = { 0.0, 0.0, 0.0 };
 	};
 
@@ -130,9 +130,8 @@ namespace Renderer
 	class Plane : public Object
 	{
 	public:
-		double Width = 5.0;
-		double Height = 5.0;
-		double Length = 5.0;
+		float Width = 5.0;
+		float Height = 5.0;
 
 		virtual Vector3 CalculateNormal(const Vector3& hit) const override
 		{
@@ -158,7 +157,7 @@ namespace Renderer
 	class Sphere : public Object
 	{
 	public:
-		double Radius = 1.0;
+		float Radius = 1.0;
 
 		Intersection Intersect(const Ray& ray) const override
 		{
@@ -185,9 +184,9 @@ namespace Renderer
 			}
 
 			const Vector3 projMinusPos = projection - XForm.GetPosition();
-			const double distance = std::sqrt((Radius * Radius) - (projMinusPos.Length() * projMinusPos.Length()));
+			const float distance = std::sqrt((Radius * Radius) - (projMinusPos.Length() * projMinusPos.Length()));
 
-			double offset = (projection - ray.GetOrigin()).Length();
+			float offset = (projection - ray.GetOrigin()).Length();
 			if (sphereToRay.Length() > Radius)
 			{
 				offset -= distance;
@@ -214,7 +213,7 @@ namespace Renderer
 	class Camera
 	{
 	public:
-		Camera(double width, double height, double focalLength = 1.0, double pixelSpacing = 0.1) :
+		Camera(float width, float height, float focalLength = 1.0, float pixelSpacing = 0.1) :
 			Width(width),
 			Height(height),
 			FocalLength(focalLength),
@@ -224,86 +223,86 @@ namespace Renderer
 		};
 		~Camera() = default;
 
-		using Viewport = std::array<Matrix<double>, 3>;
+		using Viewport = std::array<Matrix<float>, 3>;
 
-		void SetAspectRatio(const double a, const double b)
+		void SetAspectRatio(const float a, const float b)
 		{
-			const double ratio = a / b;
+			const float ratio = a / b;
 			Height /= ratio;
 			Initialise();
 		}
 
-		void SetPixel(const Size index, const double r, const double g, const double b)
+		void SetPixel(const Size index, const float r, const float g, const float b)
 		{
 			mViewport[0][index] = r;
 			mViewport[1][index] = g;
 			mViewport[2][index] = b;
 		}
 
-		Vector3 GetPixelPosition(const double u, const double v) const
+		Vector3 GetPixelPosition(const float u, const float v) const
 		{
-			const double hWidth = Width / 2.0;
-			const double hHeight = Height / 2.0;
+			const float hWidth = Width / 2.0f;
+			const float hHeight = Height / 2.0f;
 
-			const double x = ((Width * u) - hWidth) * PixelSpacing;
-			const double y = ((Height * v) - hHeight) * PixelSpacing;
+			const float x = ((Width * u) - hWidth) * PixelSpacing;
+			const float z = ((Height * v) - hHeight) * PixelSpacing;
 
-			Vector3 position = { x, y, -FocalLength };
+			Vector3 position = { x, -FocalLength, z };
 			auto transformed = position.MatrixMultiply(XForm.GetAxis());
 			transformed += XForm.GetPosition();
 
 			return transformed;
 		}
 
-		void LookAt(const Vector3& position)
+		void LookAt(const Vector3& target, const Vector3& up)
 		{
-			const auto direction = XForm.GetPosition() - position;
-			const auto axis = Transform(direction, Y_AXIS, XForm.GetPosition());
+			const auto direction = XForm.GetPosition() - target;
+			const auto axis = Transform(direction, up, XForm.GetPosition());
 			XForm.SetAxis(axis.GetAxis());
 		}
 
 		Vector2 PixelToUV(const Size index) const
 		{
-			const double column = static_cast<double>(mViewport[0].ColumnNumberFromIndex(index));
-			const double row = static_cast<double>(mViewport[0].RowNumberFromIndex(index));
-			const double u = column / static_cast<double>(mViewport[0].Columns());
-			const double v = row / static_cast<double>(mViewport[0].Rows());
+			const float column = static_cast<float>(mViewport[0].ColumnNumberFromIndex(index));
+			const float row = static_cast<float>(mViewport[0].RowNumberFromIndex(index));
+			const float u = column / static_cast<float>(mViewport[0].Columns());
+			const float v = row / static_cast<float>(mViewport[0].Rows());
 			return { u, v };
 		}
 
-		Ray CreateRay(const Size pixel, const double randomMultiplier = 0.01) const
+		Ray CreateRay(const Size pixel, const float randomMultiplier = 0.01f) const
 		{
 			const auto uv = PixelToUV(pixel);
 			const auto position = GetPixelPosition(uv[0], uv[1]);
 
-			const double r1 = Distribution(Generator) - 0.5;
-			const double r2 = Distribution(Generator) - 0.5;
-			const double r3 = Distribution(Generator) - 0.5;
+			const float r1 = Distribution(Generator) - 0.5f;
+			const float r2 = Distribution(Generator) - 0.5f;
+			const float r3 = Distribution(Generator) - 0.5f;
 
-			const double rx = (position - XForm.GetPosition())[0] + (r1 * randomMultiplier);
-			const double ry = (position - XForm.GetPosition())[1] + (r2 * randomMultiplier);
-			const double rz = (position - XForm.GetPosition())[2] + (r3 * randomMultiplier);
+			const float rx = (position - XForm.GetPosition())[0] + (r1 * randomMultiplier);
+			const float ry = (position - XForm.GetPosition())[1] + (r2 * randomMultiplier);
+			const float rz = (position - XForm.GetPosition())[2] + (r3 * randomMultiplier);
 
 			const Vector3 origin = XForm.GetPosition();
 			const Vector3 direction = { rx, ry, rz };
 			return Ray(origin, direction);
 		}
 
-		double GetViewportArea() const { return static_cast<double>(mViewport[0].Area()); }
+		float GetViewportArea() const { return static_cast<float>(mViewport[0].Area()); }
 		const Viewport& GetViewport() const { return mViewport; }
 
-		double Width;
-		double Height;
-		double FocalLength;
-		double PixelSpacing;
+		float Width;
+		float Height;
+		float FocalLength;
+		float PixelSpacing;
 		Transform XForm;
 
 	private:
 		void Initialise()
 		{
-			mViewport[0] = Matrix<double>(0.0, static_cast<Size>(Height), static_cast<Size>(Width));
-			mViewport[1] = Matrix<double>(0.0, static_cast<Size>(Height), static_cast<Size>(Width));
-			mViewport[2] = Matrix<double>(0.0, static_cast<Size>(Height), static_cast<Size>(Width));
+			mViewport[0] = Matrix<float>(0.0, static_cast<Size>(Height), static_cast<Size>(Width));
+			mViewport[1] = Matrix<float>(0.0, static_cast<Size>(Height), static_cast<Size>(Width));
+			mViewport[2] = Matrix<float>(0.0, static_cast<Size>(Height), static_cast<Size>(Width));
 		}
 
 		Viewport mViewport;
@@ -322,13 +321,13 @@ namespace Renderer
 
 		void Initialise()
 		{
-			mLight.Position = { 0.0, 8.0, 0.0 };
+			mLight.Position = { 8.0, 8.0, 8.0 };
 
 			mBackgroundColour = { 0.0, 0.0, 0.0 };
-			mSamplesPerPixel = 1u;
-			mMaxDepth = 10u;
-			mMaxGIDepth = 2u;
-			mSecondryBounces = 4u;
+			mSamplesPerPixel = 2u;
+			mMaxDepth = 1u;
+			mMaxGIDepth = 1u;
+			mSecondryBounces = 1u;
 		}
 
 		Camera::Viewport Render(
@@ -344,8 +343,8 @@ namespace Renderer
 					const auto raytrace = Trace(ray, i);
 					colour += raytrace.SurfaceColour;
 				}
-				colour *= 1.0 / static_cast<double>(mSamplesPerPixel);
-				colour.Clamp(0.0, 0.9999);
+				colour *= 1.0f / static_cast<float>(mSamplesPerPixel);
+				colour.Clamp(0.0f, 0.9999f);
 
 				mCamera.SetPixel(i, colour[0], colour[1], colour[2]);
 			};
@@ -375,39 +374,39 @@ namespace Renderer
 			auto intersection = intersections.front();
 			const auto object = intersection.Object;
 			const auto normal = object->CalculateNormal(intersection.Position);
-			const auto hit = intersection.Position + (normal * 0.0001);
-			double shadow = 1.0;
+			const auto hit = intersection.Position + (normal * 0.0001f);
+			float shadow = 1.0f;
 
 			if (Shadow(Ray(hit, mLight.Position - hit)))
-				shadow = 0.2;
+				shadow = 0.5f;
 
 			if (object->Material.Reflective && depth < mMaxDepth)
 			{
 				const auto reflectionRay = Ray(hit, Ray::Reflection(normal, ray.GetOrigin() - hit));
-				auto reflection = Trace(reflectionRay, pixel, depth + 1).SurfaceColour * 1.0;
+				auto reflection = Trace(reflectionRay, pixel, depth + 1).SurfaceColour * 1.0f;
 
-				double facingRatio = -ray.GetDirection().DotProduct(hit);
-				double fresnel = mix(pow(1.0 - facingRatio, 3), 1, 0.1);
+				float facingRatio = -ray.GetDirection().DotProduct(hit);
+				float fresnel = mix(std::pow(1.0f - facingRatio, 3), 1.0f, 0.1f);
 
-				illumination = (reflection)* object->Material.Colour;
+				illumination = (reflection * fresnel) * object->Material.Colour;
 			}
 			else
 			{
 				const auto lightDirection = (mLight.Position - hit).Normalized();
-				const double lambertian = std::max(normal.DotProduct(lightDirection), 0.2);
+				const float lambertian = std::max(normal.DotProduct(lightDirection), 0.2f);
 				const auto diffuse = object->Material.Colour * lambertian;
-				//const auto specular = Phong(ray.GetDirection(), lightDirection, normal); (diffuse + specular) * shadow;
-				const auto direct = (diffuse)* shadow;
+				const auto specular = Phong(ray.GetDirection(), lightDirection, normal); (diffuse + specular) * shadow;
+				const auto direct = (diffuse) * shadow;
 
-				Vector3 indirect = 0.0;
+				Vector3 indirect = 0.0f;
 				if (depth < mMaxGIDepth)
 				{
-					const double pdf = 1.0 / (2.0 * PI);
-					const auto axis = Transform(normal, hit, hit);
+					const float pdf = 1.0f / (2.0f * PI);
+					const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
 					for (Size i = 0; i < mSecondryBounces; ++i)
 					{
-						const double r1 = Distribution(Generator);
-						const double r2 = Distribution(Generator);
+						const float r1 = Distribution(Generator);
+						const float r2 = Distribution(Generator);
 
 						const Vector3 hemisphereSample = SampleHemisphere(r1, r2);
 						const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
@@ -418,8 +417,8 @@ namespace Renderer
 						colour.SetNaNsOrINFs(0.0);
 						indirect += colour;
 					}
-					indirect /= static_cast<double>(mSecondryBounces);
-					indirect /= static_cast<double>(depth + 1);
+					indirect /= static_cast<float>(mSecondryBounces);
+					indirect /= static_cast<float>(depth + 1);
 				}
 
 				illumination = (direct / PI) + (indirect * 2.0);
@@ -433,7 +432,7 @@ namespace Renderer
 		std::vector<Intersection> IntersectScene(const Ray& ray, bool checkAll) const
 		{
 			std::vector<Intersection> intersections;
-			double distance = Infinity;
+			float distance = Infinity;
 			for (const auto& o : mObjects)
 			{
 				Intersection intersect = o->Intersect(ray);
@@ -445,7 +444,7 @@ namespace Renderer
 					}
 
 					intersections.push_back(intersect);
-					const double hitDistance = ray.GetOrigin().Distance(intersect.Position);
+					const float hitDistance = ray.GetOrigin().Distance(intersect.Position);
 					if (hitDistance < distance)
 					{
 						distance = hitDistance;
@@ -462,25 +461,25 @@ namespace Renderer
 			return !IntersectScene(ray, false).empty();
 		}
 
-		double Phong(const Vector3& view, const Vector3& lightDirection, const Vector3& normal) const
+		float Phong(const Vector3& view, const Vector3& lightDirection, const Vector3& normal) const
 		{
-			const auto reflection = Ray::Reflection(normal, lightDirection) * -1.0;
-			auto specularAngle = std::max(reflection.DotProduct(view), 0.0);
-			auto specular = std::pow(specularAngle, 4.0); // 2.0 default
+			const auto reflection = Ray::Reflection(normal, lightDirection) * -1.0f;
+			auto specularAngle = std::max(reflection.DotProduct(view), 0.0f);
+			auto specular = std::pow(specularAngle, 4.0f); // 2.0 default
 			return specular;
 		}
 
-		double mix(const double &a, const double &b, const double &mix) const
+		float mix(const float &a, const float &b, const float &mix) const
 		{
 			return b * mix + a * (1 - mix);
 		}
 
-		Vector3 SampleHemisphere(const double r1, const double r2) const
+		Vector3 SampleHemisphere(const float r1, const float r2) const
 		{
-			double angle = std::sqrt(1.0 - (r1 * r1));
-			double phi = 2 * PI * r2;
-			double x = angle * std::cos(phi);
-			double z = angle * std::sin(phi);
+			float angle = std::sqrt(1.0f - (r1 * r1));
+			float phi = 2.0f * PI * r2;
+			float x = angle * std::cos(phi);
+			float z = angle * std::sin(phi);
 			return { x, r1, z };
 		}
 
