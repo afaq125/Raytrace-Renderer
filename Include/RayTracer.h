@@ -37,6 +37,14 @@ namespace Renderer
 			mAxis(Matrix3()),
 			mPosition(position)
 		{
+			float difference = direction.DotProduct(up);
+			if (difference == 1.0f || difference == -1.0f)
+			{
+				std::cout << "Warning direction and up are perpendicular when creating axis. Returning identity matrix." << std::endl;
+				mAxis.Identity();
+				return;
+			}
+
 			auto z = direction.Normalized();
 			auto y = z.CrossProduct(up).Normalized();
 			auto x = z.CrossProduct(y).Normalized();
@@ -98,26 +106,13 @@ namespace Renderer
 		bool Reflective = false;
 	};
 
-	struct Grid
-	{
-		float Scale = 10.0;
-		Vector3 Position = { 0.0, 0.0, 0.0 };
-	};
-
-	class Object;
-
-	struct Intersection
-	{
-		bool Hit = false;
-		Vector3 Position = Vector3();
-		Vector3 SurfaceColour = Vector3();
-		const Object* Object = nullptr;
-	};
-
 	class Object
 	{
 	public:
-		Object() = default;
+		Object() : 
+			XForm(Transform()), 
+			Material(Shader())
+		{}
 		~Object() = default;
 
 		virtual Vector3 CalculateNormal(const Vector3& hit) const = 0;
@@ -127,44 +122,105 @@ namespace Renderer
 		Shader Material;
 	};
 
+	struct Intersection
+	{
+		bool Hit = false;
+		Vector3 Position = Vector3();
+		Vector3 SurfaceColour = Vector3();
+		const Object* Object = nullptr;
+	};
+
 	class Plane : public Object
 	{
 	public:
-		float Width = 5.0;
-		float Height = 5.0;
+		float Width = 10.0f;
+		float Height = 10.0f;
+
+		Vector3 UVToWorld(const float u, const float v)
+		{
+			//Width / u;
+		}
+
+		void  SetDirection(const Vector3& direction)
+		{
+			const auto normalised = direction.Normalized();
+			float difference = normalised.DotProduct(Y_AXIS);
+			if (difference == 1.0f)
+			{
+				return;
+			}
+
+			if (difference == -1.0f)
+			{
+				Matrix3 axis = XForm.GetAxis();
+				axis *= -1.0f;
+				XForm.SetAxis(axis);
+				return;
+			}
+
+			XForm = Transform(normalised, Y_AXIS, XForm.GetPosition());
+		}
 
 		virtual Vector3 CalculateNormal(const Vector3& hit) const override
 		{
-			return Y_AXIS;
+			const float x = XForm.GetAxis().Get(0, 1);
+			const float y = XForm.GetAxis().Get(1, 1);
+			const float z = XForm.GetAxis().Get(2, 1);
+			return {x, y, z};
 		}
 
 		virtual Intersection Intersect(const Ray& ray) const override
 		{
-			auto projection = ray.Projection(XForm.GetPosition());
-			const double distance = (projection - XForm.GetPosition()).Length();
+			const float x = XForm.GetAxis().Get(0, 1);
+			const float y = XForm.GetAxis().Get(1, 1);
+			const float z = XForm.GetAxis().Get(2, 1);
+			const Vector3 normal = {x, y, z};
 
-			if (projection[1] < 0)
+			const auto difference = ray.GetDirection().DotProduct(normal);
+
+			if (std::abs(difference) > 0.0f)
 			{
-				return Intersection();
+				const auto direction = XForm.GetPosition() - ray.GetOrigin();
+				const auto surfaceDistance = direction.DotProduct(normal) / difference;
+				const bool hit = surfaceDistance >= 0.0f;
+				if (hit)
+				{
+					const Vector3 position = (ray.GetDirection() * surfaceDistance) + ray.GetOrigin();
+					const auto pLocal = position - XForm.GetPosition();
+					
+					const auto halfWidth = Width / 2.0f;
+					const auto halfHeight = Height / 2.0f;
+					const Vector3 xLocal = { halfWidth, 0.0f, 0.0f };
+					const Vector3 yLocal = { 0.0f, 0.0f, halfHeight };
+					const auto xWorld = xLocal.MatrixMultiply(XForm.GetAxis());
+					const auto yWorld = yLocal.MatrixMultiply(XForm.GetAxis());
+					 
+					const auto xDistance = xWorld.DotProduct(pLocal) / halfWidth;
+					const auto yDistance = yWorld.DotProduct(pLocal) / halfHeight;
+
+					if (xDistance > -halfWidth && xDistance < halfWidth &&
+						yDistance > -halfHeight && yDistance < halfHeight)
+					{
+						return { true,  position, Material.Colour, static_cast<const Object*>(this) };
+					}
+				}
 			}
 
-			//projection = projection.MatrixMultiply(Transform(Y_AXIS, X_AXIS, XForm.GetPosition()).GetAxis());
-
-			return { true,  projection, Material.Colour, static_cast<const Object*>(this) };
+			return Intersection();
 		}
 	};
 
 	class Sphere : public Object
 	{
 	public:
-		float Radius = 1.0;
+		float Radius = 1.0f;
 
 		Intersection Intersect(const Ray& ray) const override
 		{
 			const auto sphereToRay = XForm.GetPosition() - ray.GetOrigin();
 			const auto sign = sphereToRay.DotProduct(ray.GetDirection());
 
-			if (sign < 0.0)
+			if (sign < 0.0f)
 			{
 				if (sphereToRay.Length() > Radius)
 				{
@@ -205,10 +261,26 @@ namespace Renderer
 		}
 	};
 
-	struct Light
+	class Light
 	{
+	public:
+		Light() = default;
+		~Light() = default;
+
 		Vector3 Position = { 0.0, 10.0, 0.0 };
+		Vector3 Colour = { 1.0, 1.0, 0.0 };
 	};
+
+	class AreaLight : public Light
+	{
+	public:
+		AreaLight() = default;
+		~AreaLight() = default;
+
+	private:
+		Plane mPlane;
+	};
+
 
 	class Camera
 	{
@@ -324,10 +396,10 @@ namespace Renderer
 			mLight.Position = { 8.0, 8.0, 8.0 };
 
 			mBackgroundColour = { 0.0, 0.0, 0.0 };
-			mSamplesPerPixel = 2u;
+			mSamplesPerPixel = 1u;
 			mMaxDepth = 1u;
-			mMaxGIDepth = 1u;
-			mSecondryBounces = 1u;
+			mMaxGIDepth = 0u;
+			mSecondryBounces = 10u;
 		}
 
 		Camera::Viewport Render(
@@ -382,21 +454,29 @@ namespace Renderer
 
 			if (object->Material.Reflective && depth < mMaxDepth)
 			{
-				const auto reflectionRay = Ray(hit, Ray::Reflection(normal, ray.GetOrigin() - hit));
+				const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
+				const float r1 = Distribution(Generator);
+				const Vector3 circleSample = SampleCircle(r1);
+				const Vector3 circleSampleToWorldSpace = circleSample.MatrixMultiply(axis.GetAxis());
+				const Vector3 newHit = hit + circleSampleToWorldSpace;
+
+				const auto reflectionRay = Ray(hit, Ray::Reflection(normal, (ray.GetOrigin() - newHit).Normalized()));
+				//const auto reflectionRay = Ray(hit, Ray::Reflection(normal, (ray.GetOrigin() - hit).Normalized()));
+
 				auto reflection = Trace(reflectionRay, pixel, depth + 1).SurfaceColour * 1.0f;
 
-				float facingRatio = -ray.GetDirection().DotProduct(hit);
+				float facingRatio = ray.GetDirection().DotProduct(hit);
 				float fresnel = mix(std::pow(1.0f - facingRatio, 3), 1.0f, 0.1f);
 
-				illumination = (reflection * fresnel) * object->Material.Colour;
+				illumination = (reflection) * object->Material.Colour;
 			}
 			else
 			{
 				const auto lightDirection = (mLight.Position - hit).Normalized();
 				const float lambertian = std::max(normal.DotProduct(lightDirection), 0.2f);
 				const auto diffuse = object->Material.Colour * lambertian;
-				const auto specular = Phong(ray.GetDirection(), lightDirection, normal); (diffuse + specular) * shadow;
-				const auto direct = (diffuse) * shadow;
+				const auto specular = Phong(ray.GetDirection(), lightDirection, normal);// (diffuse + specular) * shadow;
+				const auto direct = (diffuse + specular + (mLight.Colour * 0.4f)) * shadow;
 
 				Vector3 indirect = 0.0f;
 				if (depth < mMaxGIDepth)
@@ -421,7 +501,7 @@ namespace Renderer
 					indirect /= static_cast<float>(depth + 1);
 				}
 
-				illumination = (direct / PI) + (indirect * 2.0);
+				illumination = (direct / PI) + (indirect * 1.0f);
 			}
 
 			illumination.Clamp(0.0, 1.0);
@@ -461,12 +541,12 @@ namespace Renderer
 			return !IntersectScene(ray, false).empty();
 		}
 
-		float Phong(const Vector3& view, const Vector3& lightDirection, const Vector3& normal) const
+		Vector3 Phong(const Vector3& view, const Vector3& lightDirection, const Vector3& normal) const
 		{
 			const auto reflection = Ray::Reflection(normal, lightDirection) * -1.0f;
 			auto specularAngle = std::max(reflection.DotProduct(view), 0.0f);
-			auto specular = std::pow(specularAngle, 4.0f); // 2.0 default
-			return specular;
+			auto specular = std::pow(specularAngle, 2.0f); // 2.0 default
+			return mLight.Colour * specular;
 		}
 
 		float mix(const float &a, const float &b, const float &mix) const
@@ -481,6 +561,14 @@ namespace Renderer
 			float x = angle * std::cos(phi);
 			float z = angle * std::sin(phi);
 			return { x, r1, z };
+		}
+
+		Vector3 SampleCircle(const float r) const
+		{
+			float phi = 2.0f * PI * r;
+			float x = std::cos(phi);
+			float z = std::sin(phi);
+			return { x, 0.0f, z };
 		}
 
 	private:

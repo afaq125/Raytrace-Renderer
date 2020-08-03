@@ -17,9 +17,9 @@ void SaveImage(const std::array<Matrix<float>, 3>& image, const std::string& pat
 	{
 		for (int j = 0; j < h; j++)
 		{
-			color.rgbRed = static_cast<BYTE>(image[0].Get(j, i) * 255.0);
-			color.rgbGreen = static_cast<BYTE>(image[1].Get(j, i) * 255.0);
-			color.rgbBlue = static_cast<BYTE>(image[2].Get(j, i) * 255.0);
+			color.rgbRed = static_cast<BYTE>(std::round(image[0].Get(j, i) * 255.0));
+			color.rgbGreen = static_cast<BYTE>(std::round(image[1].Get(j, i) * 255.0));
+			color.rgbBlue = static_cast<BYTE>(std::round(image[2].Get(j, i) * 255.0));
 			FreeImage_SetPixelColor(bitmapOutput, i, j, &color);
 		}
 	}
@@ -80,46 +80,67 @@ int main()
 		auto s1 = std::make_shared<Sphere>();
 		auto s2 = std::make_shared<Sphere>();
 		auto s3 = std::make_shared<Sphere>();
-		s1->Radius = 3.0;
-		s2->Radius = 3.0;
-		s3->Radius = 3.0;
-		s1->XForm.SetPosition({ -6.0, 0.0, 0.0 });
-		s2->XForm.SetPosition({ 0.0, 0.0, -3.0 });
-		s3->XForm.SetPosition({ 6.0, 0.0, 0.0 });
-		s1->Material.Colour = { 1.0, 0.0, 0.0 };
-		s2->Material.Colour = { 0.0, 1.0, 0.0 };
-		s3->Material.Colour = { 0.0, 0.0, 1.0 };
+		s1->Radius = 3.3f;
+		s2->Radius = 3.3f;
+		s3->Radius = 3.3f;
+		s1->XForm.SetPosition({ -6.0f, 3.0f, 0.0f });
+		s2->XForm.SetPosition({ 0.0f, 3.0f, -3.0f });
+		s3->XForm.SetPosition({ 6.0f, 3.0f, 0.0f });
+		s1->Material.Colour = { 1.0f, 0.0f, 0.0f };
+		s2->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		s3->Material.Colour = { 0.0f, 0.0f, 1.0f };
 		//s2->Material.Reflective = true;
 		objects.push_back(s1);
 		objects.push_back(s2);
 		objects.push_back(s3);
 
-		auto p1 = std::make_shared<Sphere>();
-		p1->Radius = 500.0;
-		p1->XForm.SetPosition({ 0.0, -503.0, 0.0 });
-		p1->Material.Colour = { 1.0, 1.0, 1.0 };
+		auto p1 = std::make_shared<Plane>();
+		auto p2 = std::make_shared<Plane>();
+		auto p3 = std::make_shared<Plane>();
+		auto p4 = std::make_shared<Plane>();
+		auto p5 = std::make_shared<Plane>();
+		p1->Width = 20.0f;
+		p2->Width = 20.0f;
+		p3->Width = 20.0f;
+		p4->Width = 20.0f;
+		p5->Width = 20.0f;
+		p1->Height = 20.0f;
+		p2->Height = 20.0f;
+		p3->Height = 20.0f;
+		p4->Height = 20.0f;
+		p5->Height = 20.0f;
+		p1->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
+		p2->XForm.SetPosition({ 0.0f, 20.0f, 0.0f });
+		p3->XForm.SetPosition({ 10.0f, 10.0f, 0.0f });
+		p4->XForm.SetPosition({ -10.0f, 10.0f, 0.0f });
+		p5->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
+		p1->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		p2->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		p3->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		p4->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		p5->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		p1->SetDirection({ 0.0f, 1.0f, 0.0f });
+		p2->SetDirection({ 0.0f, -1.0f, 0.0f });
+		p3->SetDirection({ -1.0f, 0.0f, 0.0f });
+		p4->SetDirection({ 1.0f, 0.0f, 0.0f });
+		p5->SetDirection({ 0.0f, 0.0f, -1.0f });
 		objects.push_back(p1);
+		objects.push_back(p2);
+		objects.push_back(p3);
+		objects.push_back(p4);
+		objects.push_back(p5);
 	}
 
-	int w = 256;
-	int h = 256;
-	auto camera = Camera(w, h, 1.0, 0.01);
-	camera.SetAspectRatio(16.0, 9.0);
-	camera.XForm.SetPosition({0.0, 15.0, 20.0});
-	
-	Vector3 target = { 0.0, 0.0, 0.0 };
+	const int w = 256;
+	const int h = 256;
+	const Vector3 target = { 0.0f, 3.0f, 0.0f };
+	auto camera = Camera(w, h, 1.5f, 0.01f);
+	camera.SetAspectRatio(16.0f, 9.0f);
+	camera.XForm.SetPosition({0.0f, 15.0f, 50.0f});
 	camera.LookAt(target, Y_MINUS_AXIS);
 
-	auto render = RayTracer(objects, camera).Render(&SaveImage, "Render_Update.png");
-	//render[0].Transpose();
-	//render[1].Transpose();
-	//render[2].Transpose();
-	//std::cout << render[0].Print() << std::endl;
-	//std::cout << render[1].Print() << std::endl;
-	//std::cout << render[2].Print() << std::endl;
+	const auto render = RayTracer(objects, camera).Render(&SaveImage, "Render_Update.png");
 	SaveImage(render, "Render_A.png");
-
-	//auto image = LoadImage("../../../Common/Test_2.jpg");
 
 	int input;
 	std::cin >> input;

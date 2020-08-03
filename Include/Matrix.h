@@ -74,8 +74,8 @@ namespace Renderer
 			inline Coordinate CoordinateFromIndex(const Size index) const { return std::make_pair(RowNumberFromIndex(index), ColumnNumberFromIndex(index)); }
 			inline bool IsSqaure() const { return Rows() == Columns(); }
 
-			inline T Get(const Size r, const Size c) const { return mData[c + (r * Columns())]; }
-			inline void Set(const Size x, const Size y, const T value) { mData[y + (x * Rows())] = value; }
+			inline T Get(const Size c, const Size r) const { return mData[r + (c * Columns())]; }
+			inline void Set(const Size c, const Size r, const T value) { mData[r + (c * Rows())] = value; }
 			inline const std::vector<T>& Data() const { return mData; }
 
 			std::vector<T> GetRow(const Size row) const;
