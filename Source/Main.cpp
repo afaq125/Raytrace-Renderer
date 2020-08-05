@@ -89,7 +89,7 @@ int main()
 		s1->Material.Colour = { 1.0f, 0.0f, 0.0f };
 		s2->Material.Colour = { 1.0f, 1.0f, 1.0f };
 		s3->Material.Colour = { 0.0f, 0.0f, 1.0f };
-		//s2->Material.Reflective = true;
+		s2->Material.Reflective = true;
 		objects.push_back(s1);
 		objects.push_back(s2);
 		objects.push_back(s3);
@@ -99,12 +99,12 @@ int main()
 		auto p3 = std::make_shared<Plane>();
 		auto p4 = std::make_shared<Plane>();
 		auto p5 = std::make_shared<Plane>();
-		p1->Width = 20.0f;
+		p1->Width = 2000.0f;
 		p2->Width = 20.0f;
 		p3->Width = 20.0f;
 		p4->Width = 20.0f;
 		p5->Width = 20.0f;
-		p1->Height = 20.0f;
+		p1->Height = 2000.0f;
 		p2->Height = 20.0f;
 		p3->Height = 20.0f;
 		p4->Height = 20.0f;
@@ -136,7 +136,7 @@ int main()
 	const Vector3 target = { 0.0f, 3.0f, 0.0f };
 	auto camera = Camera(w, h, 1.5f, 0.01f);
 	camera.SetAspectRatio(16.0f, 9.0f);
-	camera.XForm.SetPosition({0.0f, 15.0f, 50.0f});
+	camera.XForm.SetPosition({0.0f, 5.0f, 20.0f});
 	camera.LookAt(target, Y_MINUS_AXIS);
 
 	const auto render = RayTracer(objects, camera).Render(&SaveImage, "Render_Update.png");

@@ -106,6 +106,16 @@ namespace Renderer
 		bool Reflective = false;
 	};
 
+	class Object;
+
+	struct Intersection
+	{
+		bool Hit = false;
+		Vector3 Position = Vector3();
+		Vector3 SurfaceColour = Vector3();
+		const Object* Object = nullptr;
+	};
+
 	class Object
 	{
 	public:
@@ -122,26 +132,32 @@ namespace Renderer
 		Shader Material;
 	};
 
-	struct Intersection
-	{
-		bool Hit = false;
-		Vector3 Position = Vector3();
-		Vector3 SurfaceColour = Vector3();
-		const Object* Object = nullptr;
-	};
-
 	class Plane : public Object
 	{
 	public:
+		Plane() : Object() {}
+		Plane(const float width, const float height) :
+			Object(),
+			Width(width),
+			Height(height)
+		{
+		}
+
 		float Width = 10.0f;
 		float Height = 10.0f;
 
-		Vector3 UVToWorld(const float u, const float v)
+		Vector3 UVToWorld(const float u, const float v) const
 		{
-			//Width / u;
+			const auto x = Width * u;
+			const auto y = Height * v;
+			const auto halfWidth = Width / 2.0f;
+			const auto halfHeight = Height / 2.0f;
+			const Vector3 local = { x - halfWidth, 0.0f, y - halfHeight };
+			const auto world = local.MatrixMultiply(XForm.GetAxis());
+			return world + XForm.GetPosition();
 		}
 
-		void  SetDirection(const Vector3& direction)
+		void SetDirection(const Vector3& direction)
 		{
 			const auto normalised = direction.Normalized();
 			float difference = normalised.DotProduct(Y_AXIS);
@@ -267,18 +283,51 @@ namespace Renderer
 		Light() = default;
 		~Light() = default;
 
-		Vector3 Position = { 0.0, 10.0, 0.0 };
+		virtual Ray Direction(const Vector3& hit) const = 0;
+
 		Vector3 Colour = { 1.0, 1.0, 0.0 };
+		float ShadowIntensity = 0.2f;
+	};
+
+	class PointLight : public Light
+	{
+	public:
+		virtual Ray Direction(const Vector3& hit) const override
+		{
+			return Ray(hit, XForm.GetPosition() - hit);
+		}
+
+		Transform XForm;
 	};
 
 	class AreaLight : public Light
 	{
 	public:
 		AreaLight() = default;
+		AreaLight(const float width, const float height, const Size samples = 8u) : 
+			Grid(Plane(width, height)),
+			Samples(samples)
+		{
+			Grid.Material.Colour = Colour;
+		}
 		~AreaLight() = default;
 
-	private:
-		Plane mPlane;
+		// Samples squared.
+		Size Samples = 8u;
+		Plane Grid;
+
+		virtual Ray Direction(const Vector3& hit) const override
+		{
+			return Ray(hit, Grid.XForm.GetPosition() - hit);
+		}
+
+		Vector3 SamplePlane(const float u, const float v, const Size uRegion, const Size vRegion) const
+		{
+			const float step  = 1.0f / static_cast<float>(Samples);
+			const float uOffset = step * uRegion;
+			const float vOffset = step * vRegion;
+			return Grid.UVToWorld(step + uOffset, step + vOffset);
+		}
 	};
 
 
@@ -393,12 +442,14 @@ namespace Renderer
 
 		void Initialise()
 		{
-			mLight.Position = { 8.0, 8.0, 8.0 };
+			mLight.Samples = 2u;
+			mLight.Grid.SetDirection({ 0.0f, -1.0f, 0.0f });
+			mLight.Grid.XForm.SetPosition({ 0.0f, 10.0f, 5.0f });
 
-			mBackgroundColour = { 0.0, 0.0, 0.0 };
-			mSamplesPerPixel = 1u;
-			mMaxDepth = 1u;
-			mMaxGIDepth = 0u;
+			mBackgroundColour = { 0.0f, 0.0f, 0.0f };
+			mSamplesPerPixel = 40u;
+			mMaxDepth = 20u;
+			mMaxGIDepth = 2u;
 			mSecondryBounces = 10u;
 		}
 
@@ -447,16 +498,33 @@ namespace Renderer
 			const auto object = intersection.Object;
 			const auto normal = object->CalculateNormal(intersection.Position);
 			const auto hit = intersection.Position + (normal * 0.0001f);
-			float shadow = 1.0f;
+			float shadow = 0.0f;
 
-			if (Shadow(Ray(hit, mLight.Position - hit)))
-				shadow = 0.5f;
+			// Shadow
+			{
+				for (Size u = 0; u < mLight.Samples; ++u)
+				{
+					for (Size v = 0; v < mLight.Samples; ++v)
+					{
+						const float random1 = Distribution(Generator);
+						const float random2 = Distribution(Generator);
+						const auto position = mLight.SamplePlane(random1, random2, u, v);
+						const auto direction = (position - hit).Normalized();
+						if (Shadow(Ray(hit, direction)))
+						{
+							shadow += 1.0f;
+						}
+					}
+				}
+				shadow = 1.0f - (shadow / std::pow(mLight.Samples, 2.0f));
+				shadow *= 1.0f - mLight.ShadowIntensity;
+			}
 
 			if (object->Material.Reflective && depth < mMaxDepth)
 			{
 				const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
-				const float r1 = Distribution(Generator);
-				const Vector3 circleSample = SampleCircle(r1);
+				const float random = Distribution(Generator);
+				const Vector3 circleSample = SampleCircle(random);
 				const Vector3 circleSampleToWorldSpace = circleSample.MatrixMultiply(axis.GetAxis());
 				const Vector3 newHit = hit + circleSampleToWorldSpace;
 
@@ -472,10 +540,10 @@ namespace Renderer
 			}
 			else
 			{
-				const auto lightDirection = (mLight.Position - hit).Normalized();
+				const auto lightDirection = mLight.Direction(hit).GetDirection();
 				const float lambertian = std::max(normal.DotProduct(lightDirection), 0.2f);
 				const auto diffuse = object->Material.Colour * lambertian;
-				const auto specular = Phong(ray.GetDirection(), lightDirection, normal);// (diffuse + specular) * shadow;
+				const auto specular = Phong(ray.GetDirection(), lightDirection, normal);
 				const auto direct = (diffuse + specular + (mLight.Colour * 0.4f)) * shadow;
 
 				Vector3 indirect = 0.0f;
@@ -485,10 +553,10 @@ namespace Renderer
 					const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
 					for (Size i = 0; i < mSecondryBounces; ++i)
 					{
-						const float r1 = Distribution(Generator);
-						const float r2 = Distribution(Generator);
+						const float random1 = Distribution(Generator);
+						const float random2 = Distribution(Generator);
 
-						const Vector3 hemisphereSample = SampleHemisphere(r1, r2);
+						const Vector3 hemisphereSample = SampleHemisphere(random1, random2);
 						const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
 						const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
 
@@ -579,7 +647,7 @@ namespace Renderer
 		Size mSecondryBounces;
 
 		const std::vector<std::shared_ptr<Object>>& mObjects;
-		Light mLight;
+		AreaLight mLight;
 		Camera mCamera;
 	};
 }
