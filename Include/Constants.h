@@ -14,5 +14,11 @@ namespace Renderer
 		{
 			return std::min(std::max(v, std::min(a, b)), std::max(a, b));
 		}
+
+		template <typename T>
+		T mix(const T &a, const T &b, const T &mix)
+		{
+			return b * mix + a * (static_cast<T>(1) - mix);
+		}
 	}
 }

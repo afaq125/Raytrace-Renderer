@@ -125,10 +125,28 @@ int main()
 		p4->SetDirection({ 1.0f, 0.0f, 0.0f });
 		p5->SetDirection({ 0.0f, 0.0f, -1.0f });
 		objects.push_back(p1);
-		objects.push_back(p2);
-		objects.push_back(p3);
-		objects.push_back(p4);
-		objects.push_back(p5);
+		//objects.push_back(p2);
+		//objects.push_back(p3);
+		//objects.push_back(p4);
+		//objects.push_back(p5);
+	}
+
+	std::vector<std::shared_ptr<Light>> lights;
+	{
+		auto l1 = std::make_shared<Lights::Point>();
+		auto l2 = std::make_shared<Lights::Area>();
+		
+		l1->Colour = { 1.0f, 0.0f, 0.0f };
+		l1->ShadowIntensity = 1.0f;
+		l1->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
+
+		l2->Colour = { 0.0f, 1.0f, 0.0f };
+		l2->Samples = 4u;
+		l2->Grid.SetDirection({ 0.0f, -1.0f, 0.0f });
+		l2->Grid.XForm.SetPosition({ 0.0f, 10.0f, 5.0f });
+
+		lights.push_back(l2);
+		lights.push_back(l1);
 	}
 
 	const int w = 256;
@@ -139,7 +157,7 @@ int main()
 	camera.XForm.SetPosition({0.0f, 5.0f, 20.0f});
 	camera.LookAt(target, Y_MINUS_AXIS);
 
-	const auto render = RayTracer(objects, camera).Render(&SaveImage, "Render_Update.png");
+	const auto render = RayTracer(objects, lights, camera).Render(&SaveImage, "Render_Update.png");
 	SaveImage(render, "Render_A.png");
 
 	int input;

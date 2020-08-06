@@ -20,16 +20,27 @@ include_directories(${FREEIMAGE_INCLUDE_DIR})
 
 add_executable(
     RaytraceRenderer
+    Include/Camera.h
     Include/Constants.h
+    Include/Lights.h
     Include/Matrix.h
+    Include/Objects.h
     Include/RayTracer.h
     Include/Renderer.h
+    Include/Shader.h
     Include/Singleton.h
     Include/ThreadPool.h
+    Include/Utilities.h
     Include/Vector.h
+    Source/Camera.cpp
+    Source/Lights.cpp
     Source/Matrix.cpp
+    Source/Objects.cpp
+    Source/RayTracer.cpp
     Source/Renderer.cpp
+    Source/Shader.cpp
     Source/Singleton.cpp
+    Source/Utilities.cpp
     Source/Vector.cpp
     Source/Main.cpp)
 
