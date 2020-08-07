@@ -140,17 +140,20 @@ int main()
 		l1->ShadowIntensity = 1.0f;
 		l1->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
 
-		l2->Colour = { 0.0f, 1.0f, 0.0f };
-		l2->Samples = 4u;
-		l2->Grid.SetDirection({ 0.0f, -1.0f, 0.0f });
-		l2->Grid.XForm.SetPosition({ 0.0f, 10.0f, 5.0f });
+		l2->Colour = { 1.0f, 1.0f, 0.0f };
+		l2->Samples = 8u;
+		l2->Grid->Width = 10.0f;
+		l2->Grid->Height = 10.0f;
+		//l2->RenderGeometry = true;
+		l2->Grid->XForm.SetPosition({ 0.0f, 10.0f, -20.0f });
+		l2->Grid->SetDirection({ 0.0f, -0.5f, -0.5f });
 
+		//lights.push_back(l1);
 		lights.push_back(l2);
-		lights.push_back(l1);
 	}
 
-	const int w = 256;
-	const int h = 256;
+	const float w = 256.0f;
+	const float h = 256.0f;
 	const Vector3 target = { 0.0f, 3.0f, 0.0f };
 	auto camera = Camera(w, h, 1.5f, 0.01f);
 	camera.SetAspectRatio(16.0f, 9.0f);

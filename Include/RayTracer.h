@@ -37,6 +37,7 @@ namespace Renderer
 
 		const std::vector<std::shared_ptr<Object>>& mObjects;
 		const std::vector<std::shared_ptr<Light>>& mLights;
+		std::vector<std::shared_ptr<Object>> mRendableObjects;
 		Camera mCamera;
 	};
 }

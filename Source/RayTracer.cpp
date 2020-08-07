@@ -18,9 +18,20 @@ void RayTracer::Initialise()
 {
 	mBackgroundColour = { 0.0f, 0.0f, 0.0f };
 	mSamplesPerPixel = 2u;
-	mMaxDepth = 20u;
-	mMaxGIDepth = 1u;
+	mMaxDepth = 2u;
+	mMaxGIDepth = 0u;
 	mSecondryBounces = 10u;
+
+	mRendableObjects = mObjects;
+
+	for (const auto& light : mLights)
+	{
+		std::shared_ptr<Lights::Area> area = std::dynamic_pointer_cast<Lights::Area>(light);
+		if (area != nullptr && area->RenderGeometry)
+		{
+			mRendableObjects.push_back(area->Grid);
+		}
+	}
 }
 
 Camera::Viewport RayTracer::Render(
@@ -58,7 +69,12 @@ Camera::Viewport RayTracer::Render(
 
 Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 {
-	auto intersections = IntersectScene(mObjects, ray, true);
+	if (depth > mMaxDepth)
+	{
+		return Intersection();
+	}
+
+	auto intersections = IntersectScene(mRendableObjects, ray, true);
 
 	if (intersections.empty())
 	{
@@ -73,42 +89,35 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 
 	for (const auto& light : mLights)
 	{
-		float shadow = light->Shadow(mObjects, hit);
+		float shadow = light->Shadow(mRendableObjects, hit);
 
-		if (object->Material.Reflective && depth < mMaxDepth)
-		{
-			auto trace = [&](const Ray& ray, const Size depth) -> Intersection { return RayTracer::Trace(ray, depth); };
-			illumination += object->Material.BRDF(ray, normal, hit, trace, depth);
-		}
-		else
-		{
-			const auto direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light));
-			Vector3 indirect = 0.0f;
+		auto trace = [&](const Ray& ray, const Size depth) -> Intersection { return RayTracer::Trace(ray, depth); };
+		const auto direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light), trace, depth);
+		Vector3 indirect = 0.0f;
 
-			if (depth < mMaxGIDepth)
+		if (depth < mMaxGIDepth)
+		{
+			const float pdf = 1.0f / (2.0f * PI);
+			const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
+			for (Size i = 0; i < mSecondryBounces; ++i)
 			{
-				const float pdf = 1.0f / (2.0f * PI);
-				const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
-				for (Size i = 0; i < mSecondryBounces; ++i)
-				{
-					const float random1 = Random();
-					const float random2 = Random();
+				const float random1 = Random();
+				const float random2 = Random();
 
-					const Vector3 hemisphereSample = SampleHemisphere(random1, random2);
-					const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
-					const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
+				const Vector3 hemisphereSample = SampleHemisphere(random1, random2);
+				const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
+				const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
 
-					auto giIntersection = Trace(indirectRay, depth + 1);
-					auto colour = (giIntersection.SurfaceColour);// *r1) / pdf;
-					colour.SetNaNsOrINFs(0.0);
-					indirect += colour;
-				}
-				indirect /= static_cast<float>(mSecondryBounces);
-				indirect /= static_cast<float>(depth + 1);
+				auto giIntersection = Trace(indirectRay, depth + 1);
+				auto colour = (giIntersection.SurfaceColour);// *r1) / pdf;
+				colour.SetNaNsOrINFs(0.0);
+				indirect += colour;
 			}
-
-			illumination += (direct / PI) + (indirect * 1.0f);
+			indirect /= static_cast<float>(mSecondryBounces);
+			indirect /= static_cast<float>(depth + 1);
 		}
+
+		illumination += (direct / PI) + (indirect * 1.0f);
 	}
 
 	illumination.Clamp(0.0, 1.0);

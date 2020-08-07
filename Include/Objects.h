@@ -34,7 +34,7 @@ namespace Renderer
 		float Width = 10.0f;
 		float Height = 10.0f;
 
-		Vector3 UVToWorld(const float u, const float v) const;
+		Vector3 UVToWorld(const float u, const float v, const float surfaceOffset = 0.0f) const;
 		void SetDirection(const Vector3& direction);
 
 		virtual Vector3 CalculateNormal(const Vector3& hit) const override;

@@ -4,13 +4,13 @@ using namespace Renderer;
 using namespace Renderer::Math;
 using namespace Renderer::Lights;
 
-Vector3 Plane::UVToWorld(const float u, const float v) const
+Vector3 Plane::UVToWorld(const float u, const float v, const float surfaceOffset) const
 {
 	const auto x = Width * u;
 	const auto y = Height * v;
 	const auto halfWidth = Width / 2.0f;
 	const auto halfHeight = Height / 2.0f;
-	const Vector3 local = { x - halfWidth, 0.0f, y - halfHeight };
+	const Vector3 local = { x - halfWidth, surfaceOffset, y - halfHeight };
 	const auto world = local.MatrixMultiply(XForm.GetAxis());
 	return world + XForm.GetPosition();
 }

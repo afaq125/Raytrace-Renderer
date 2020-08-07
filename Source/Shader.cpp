@@ -4,8 +4,13 @@ using namespace Renderer;
 using namespace Renderer::Math;
 using namespace Renderer::Lights;
 
-Vector3 Shader::BSDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light) const
+Vector3 Shader::BSDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light, const std::function<Intersection(const Ray&, const Size)>& trace, const Size depth) const
 {
+	if (Reflective)
+	{
+		return BRDF(ray, normal, hit, trace, depth);
+	}
+
 	const auto lightDirection = light->Direction(hit).GetDirection();
 	const float lambertian = std::max(normal.DotProduct(lightDirection), 0.2f);
 	const auto diffuse = Colour * lambertian;
