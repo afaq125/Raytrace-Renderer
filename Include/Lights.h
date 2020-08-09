@@ -40,7 +40,7 @@ namespace Renderer
 			Area() : 
 				Grid(std::make_shared<Plane>()) 
 			{ 
-				Grid->Material.Colour = Colour; 
+				Grid->Material.Diffuse = Colour; 
 			}
 			Area(const float width, const float height, const Size samples = 8u) : 
 				Area()

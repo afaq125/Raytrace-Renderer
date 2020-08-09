@@ -75,7 +75,7 @@ Intersection Plane::Intersect(const Ray& ray) const
 			if (xDistance > -halfWidth && xDistance < halfWidth &&
 				yDistance > -halfHeight && yDistance < halfHeight)
 			{
-				return { true,  position, Material.Colour, static_cast<const Object*>(this) };
+				return { true,  position, Material.Diffuse, static_cast<const Object*>(this) };
 			}
 		}
 	}
@@ -97,7 +97,7 @@ Intersection Sphere::Intersect(const Ray& ray) const
 		if (sphereToRay.Length() == Radius)
 		{
 			// TODO: Check this but it should be the case when the ray origin is on the edge of the sphere.
-			return { true, ray.GetOrigin(), Material.Colour, static_cast<const Object*>(this) };
+			return { true, ray.GetOrigin(), Material.Diffuse, static_cast<const Object*>(this) };
 		}
 	}
 
@@ -120,7 +120,7 @@ Intersection Sphere::Intersect(const Ray& ray) const
 		offset += distance;
 	}
 
-	return { true, ray.GetOrigin() + (ray.GetDirection() * offset), Material.Colour, static_cast<const Object*>(this) };
+	return { true, ray.GetOrigin() + (ray.GetDirection() * offset), Material.Diffuse, static_cast<const Object*>(this) };
 }
 
 Vector3 Sphere::CalculateNormal(const Vector3& hit) const

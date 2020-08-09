@@ -16,12 +16,6 @@ namespace
 
 void RayTracer::Initialise()
 {
-	mBackgroundColour = { 0.0f, 0.0f, 0.0f };
-	mSamplesPerPixel = 2u;
-	mMaxDepth = 2u;
-	mMaxGIDepth = 0u;
-	mSecondryBounces = 10u;
-
 	mRendableObjects = mObjects;
 
 	for (const auto& light : mLights)
@@ -41,13 +35,13 @@ Camera::Viewport RayTracer::Render(
 	auto job = [&](const Size i) -> void
 	{
 		auto colour = Vector3();
-		for (Size s = 0; s < mSamplesPerPixel; ++s)
+		for (Size s = 0; s < mSettings.SamplesPerPixel; ++s)
 		{
 			const auto ray = mCamera.CreateRay(i);
 			const auto raytrace = Trace(ray);
 			colour += raytrace.SurfaceColour;
 		}
-		colour *= 1.0f / static_cast<float>(mSamplesPerPixel);
+		colour *= 1.0f / static_cast<float>(mSettings.SamplesPerPixel);
 		colour.Clamp(0.0f, 0.9999f);
 
 		mCamera.SetPixel(i, colour[0], colour[1], colour[2]);
@@ -69,7 +63,7 @@ Camera::Viewport RayTracer::Render(
 
 Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 {
-	if (depth > mMaxDepth)
+	if (depth > mSettings.MaxDepth)
 	{
 		return Intersection();
 	}
@@ -78,7 +72,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 
 	if (intersections.empty())
 	{
-		return { false, Vector3(), mBackgroundColour, nullptr };
+		return { false, Vector3(), mSettings.BackgroundColour, nullptr };
 	}
 
 	auto illumination = Vector3();
@@ -89,32 +83,19 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 
 	for (const auto& light : mLights)
 	{
-		float shadow = light->Shadow(mRendableObjects, hit);
-
-		auto trace = [&](const Ray& ray, const Size depth) -> Intersection { return RayTracer::Trace(ray, depth); };
-		const auto direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light), trace, depth);
+		const float shadow = light->Shadow(mRendableObjects, hit);
+		Vector3 direct = 0.0f;
 		Vector3 indirect = 0.0f;
 
-		if (depth < mMaxGIDepth)
+		if (depth < mSettings.MaxShaderDepth)
 		{
-			const float pdf = 1.0f / (2.0f * PI);
-			const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
-			for (Size i = 0; i < mSecondryBounces; ++i)
-			{
-				const float random1 = Random();
-				const float random2 = Random();
+			auto trace = [&](const Ray& ray) -> Intersection { return RayTracer::Trace(ray, depth + 1); };
+			direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light), trace);
+		}
 
-				const Vector3 hemisphereSample = SampleHemisphere(random1, random2);
-				const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
-				const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
-
-				auto giIntersection = Trace(indirectRay, depth + 1);
-				auto colour = (giIntersection.SurfaceColour);// *r1) / pdf;
-				colour.SetNaNsOrINFs(0.0);
-				indirect += colour;
-			}
-			indirect /= static_cast<float>(mSecondryBounces);
-			indirect /= static_cast<float>(depth + 1);
+		if (depth < mSettings.MaxGIDepth)
+		{
+			indirect = GlobalIllumination(ray, normal, hit, depth);
 		}
 
 		illumination += (direct / PI) + (indirect * 1.0f);
@@ -123,4 +104,28 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 	illumination.Clamp(0.0, 1.0);
 	intersection.SurfaceColour = illumination;
 	return intersection;
+}
+
+Vector3 RayTracer::GlobalIllumination(const Ray& ray, const Vector3& normal, const Vector3& hit, const Size depth) const 
+{
+	Vector3 indirect = 0.0f;
+	const float pdf = 1.0f / (2.0f * PI);
+	const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
+	for (Size i = 0; i < mSettings.SecondryBounces; ++i)
+	{
+		const float random1 = Random();
+		const float random2 = Random();
+
+		const Vector3 hemisphereSample = SampleHemisphere(random1, random2);
+		const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
+		const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
+
+		auto giIntersection = Trace(indirectRay, depth + 1);
+		auto colour = (giIntersection.SurfaceColour);// *r1) / pdf;
+		colour.SetNaNsOrINFs(0.0);
+		indirect += colour;
+	}
+	indirect /= static_cast<float>(mSettings.SecondryBounces);
+	indirect /= static_cast<float>(depth + 1);
+	return indirect;
 }

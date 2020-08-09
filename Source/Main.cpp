@@ -86,13 +86,12 @@ int main()
 		s1->XForm.SetPosition({ -6.0f, 3.0f, 0.0f });
 		s2->XForm.SetPosition({ 0.0f, 3.0f, -3.0f });
 		s3->XForm.SetPosition({ 6.0f, 3.0f, 0.0f });
-		s1->Material.Colour = { 1.0f, 0.0f, 0.0f };
-		s2->Material.Colour = { 1.0f, 1.0f, 1.0f };
-		s3->Material.Colour = { 0.0f, 0.0f, 1.0f };
-		s2->Material.Reflective = true;
-		objects.push_back(s1);
+		s1->Material.Diffuse = { 1.0f, 0.0f, 0.0f };
+		s2->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
+		s3->Material.Diffuse = { 0.0f, 0.0f, 1.0f };
+		//objects.push_back(s1);
 		objects.push_back(s2);
-		objects.push_back(s3);
+		//objects.push_back(s3);
 
 		auto p1 = std::make_shared<Plane>();
 		auto p2 = std::make_shared<Plane>();
@@ -114,17 +113,17 @@ int main()
 		p3->XForm.SetPosition({ 10.0f, 10.0f, 0.0f });
 		p4->XForm.SetPosition({ -10.0f, 10.0f, 0.0f });
 		p5->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
-		p1->Material.Colour = { 1.0f, 1.0f, 1.0f };
-		p2->Material.Colour = { 1.0f, 1.0f, 1.0f };
-		p3->Material.Colour = { 1.0f, 1.0f, 1.0f };
-		p4->Material.Colour = { 1.0f, 1.0f, 1.0f };
-		p5->Material.Colour = { 1.0f, 1.0f, 1.0f };
+		p1->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
+		p2->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
+		p3->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
+		p4->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
+		p5->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
 		p1->SetDirection({ 0.0f, 1.0f, 0.0f });
 		p2->SetDirection({ 0.0f, -1.0f, 0.0f });
 		p3->SetDirection({ -1.0f, 0.0f, 0.0f });
 		p4->SetDirection({ 1.0f, 0.0f, 0.0f });
 		p5->SetDirection({ 0.0f, 0.0f, -1.0f });
-		objects.push_back(p1);
+		//objects.push_back(p1);
 		//objects.push_back(p2);
 		//objects.push_back(p3);
 		//objects.push_back(p4);
@@ -138,7 +137,7 @@ int main()
 		
 		l1->Colour = { 1.0f, 0.0f, 0.0f };
 		l1->ShadowIntensity = 1.0f;
-		l1->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
+		l1->XForm.SetPosition({ 0.0f, 10.0f, 10.0f });
 
 		l2->Colour = { 1.0f, 1.0f, 0.0f };
 		l2->Samples = 8u;
@@ -148,8 +147,8 @@ int main()
 		l2->Grid->XForm.SetPosition({ 0.0f, 10.0f, -20.0f });
 		l2->Grid->SetDirection({ 0.0f, -0.5f, -0.5f });
 
-		//lights.push_back(l1);
-		lights.push_back(l2);
+		lights.push_back(l1);
+		//lights.push_back(l2);
 	}
 
 	const float w = 256.0f;
