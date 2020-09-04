@@ -5,19 +5,17 @@ namespace Renderer
 	using namespace Math;
 	using namespace Lights;
 
-
-
 	class RayTracer
 	{
 	public:
 		struct Settings
 		{
 			Vector3 BackgroundColour = { 0.0f, 0.0f, 0.0f };
-			Size SamplesPerPixel = 4u;
-			Size MaxDepth = 20u;
+			Size SamplesPerPixel = 50u;
+			Size MaxDepth = 1u;
 			Size MaxShaderDepth = 1u;
 			Size MaxGIDepth = 0u;
-			Size SecondryBounces = 10u;
+			Size SecondryBounces = 20u;
 		};
 
 		RayTracer() = delete;

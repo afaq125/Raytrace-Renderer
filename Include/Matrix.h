@@ -48,6 +48,7 @@ namespace Renderer
 			Matrix<T> Cofactors() const;
 			T Determinant() const;
 			void Inverse();
+			Matrix<T> Inversed() const;
 			static void Laplace(
 				const Matrix<T>& matrix,
 				const Size index,
@@ -126,7 +127,7 @@ namespace Renderer
 				if (rows * columns != ROWS * COLUMNS)
 					throw std::logic_error("Incorrect number of arguments.");
 			}
-			~MatrixT() {}
+			virtual ~MatrixT() {}
 		};
 
 		using Matrix3 = MatrixT<float, 3, 3>;

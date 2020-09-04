@@ -8,6 +8,7 @@ namespace Renderer
 	{
 		const float PI = 3.1427f;
 		const float Infinity = std::numeric_limits<float>::infinity();
+		const float NaN = std::numeric_limits<float>::quiet_NaN();
 
 		template <typename T>
 		T Clamp(const T v, const T a, const T b)

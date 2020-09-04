@@ -10,17 +10,12 @@ namespace Renderer
 		{
 		public:
 			Light() = default;
-			~Light() = default;
-
-			enum class Models
-			{
-				PHONG
-			};
+			virtual ~Light() = default;
 
 			virtual Ray Direction(const Vector3& hit) const = 0;
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const = 0;
+			virtual Vector3 IntensityAt(const Ray& ray) const = 0;
 
-			Models Model = Models::PHONG;
 			Vector3 Colour = { 1.0, 1.0, 1.0 };
 			float ShadowIntensity = 0.4f;
 		};
@@ -30,6 +25,7 @@ namespace Renderer
 		public:
 			virtual Ray Direction(const Vector3& hit) const override;
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
+			virtual Vector3 IntensityAt(const Ray& ray) const override;
 
 			Transform XForm;
 		};
@@ -49,7 +45,7 @@ namespace Renderer
 				Grid->Height = height;
 				Samples = samples;
 			}
-			~Area() = default;
+			virtual ~Area() = default;
 
 			// Samples squared.
 			Size Samples = 8u;
@@ -58,8 +54,47 @@ namespace Renderer
 
 			virtual Ray Direction(const Vector3& hit) const override;
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
+			virtual Vector3 IntensityAt(const Ray& ray) const override;
 
 			Vector3 SamplePlane(const float u, const float v, const Size uRegion, const Size vRegion, const float surfaceOffset = 0.0f) const;
+		};
+
+		class Enviroment : public Light
+		{
+		public:
+			Enviroment() = default;
+			Enviroment(Texture top,
+				Texture bottom,
+				Texture left,
+				Texture right,
+				Texture back,
+				Texture front)
+			{
+				CubeMap = GenerateCubeMap(
+					std::move(top),
+					std::move(bottom),
+					std::move(left),
+					std::move(right),
+					std::move(back),
+					std::move(front));
+			}
+			virtual ~Enviroment() = default;
+
+			std::vector<Plane> CubeMap;
+
+			virtual Ray Direction(const Vector3& hit) const override;
+			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
+			virtual Vector3 IntensityAt(const Ray& ray) const override;
+
+			Vector3 SampleCubeMap(const Ray& ray) const;
+
+			static std::vector<Plane> GenerateCubeMap(
+				Texture top,
+				Texture bottom,
+				Texture left,
+				Texture right,
+				Texture back,
+				Texture front);
 		};
 	}
 }

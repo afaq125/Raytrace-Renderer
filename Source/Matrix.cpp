@@ -89,7 +89,7 @@ template<typename T>
 Matrix<T> Matrix<T>::Minors(const Matrix<Size>& mask) const
 {
 	Matrix<T> result(Rows(), Columns());
-	for (Size i = 0; i < Columns(); ++i)
+	for (Size i = 0; i < Area(); ++i)
 	{
 		if (mask.Area() == 0 || mask[i] == 1)
 		{
@@ -147,13 +147,22 @@ T Matrix<T>::Determinant() const
 template<typename T>
 void Matrix<T>::Inverse()
 {
+	const T determinant = Determinant();
+	Transpose();
 	mData = Minors().Data();
 	Cofactor();
-	Transpose();
 
 	// Determinant can can be calculated faster by reusing minors.
-	T value = static_cast<T>(1) / Determinant();
+	T value = static_cast<T>(1) / determinant;
 	std::for_each(mData.begin(), mData.end(), [&](auto &i) { i *= value; });
+}
+
+template<typename T>
+Matrix<T> Matrix<T>::Inversed() const
+{
+	auto inversed = *this;
+	inversed.Inverse();
+	return inversed;
 }
 
 template<typename T>

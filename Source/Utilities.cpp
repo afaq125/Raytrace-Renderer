@@ -40,7 +40,8 @@ Vector3 Ray::Projection(const Vector3& position) const
 
 Vector3 Ray::Reflection(const Vector3& normal, const Vector3& direction)
 {
-	return (((normal - direction) * normal.DotProduct(direction)) * 2.0);
+	//return (((normal - direction) * normal.DotProduct(direction)) * 2.0f);
+	return normal * (2.0f * normal.DotProduct(direction)) - direction;
 }
 
 std::vector<Intersection> Renderer::IntersectScene(const std::vector<std::shared_ptr<Object>>& objects, const Ray& ray, bool checkAll)

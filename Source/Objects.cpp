@@ -4,6 +4,15 @@ using namespace Renderer;
 using namespace Renderer::Math;
 using namespace Renderer::Lights;
 
+Vector3 Plane::WorldToUV(const Vector3 position) const
+{
+	const auto inverse = XForm.GetAxis().Inversed();
+	const auto local = position.MatrixMultiply(XForm.GetAxis());
+	const auto u = std::abs(local[0] / Width);
+	const auto v = std::abs(local[2] / Height);
+	return { u, v, 0.0f };
+}
+
 Vector3 Plane::UVToWorld(const float u, const float v, const float surfaceOffset) const
 {
 	const auto x = Width * u;
