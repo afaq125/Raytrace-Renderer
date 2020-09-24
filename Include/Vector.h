@@ -43,6 +43,8 @@ namespace Renderer
 			// Accessors
 			T& operator[] (Size i) { return mData[i]; }
 			const T& operator[] (Size i) const { return mData[i]; }
+			std::array<T, SIZE>& Data() { return mData; }
+			const std::array<T, SIZE>& Data() const { return mData; }
 
 			T Length() const;
 			void Normalize();
@@ -52,6 +54,8 @@ namespace Renderer
 			T DotProduct(const Vector<T, SIZE>& v) const;
 			T Distance(const Vector<T, SIZE>& v) const;
 			void SetNaNsOrINFs(const T value, const bool setNaNs = true, bool setINFs = true);
+			void Pow(const T exponent);
+			Vector<T, SIZE> Mix(const Vector<T, SIZE>& b, const T &amount) const;
 
 			// Size dependant functions.
 			Vector<T, SIZE> MatrixMultiply(const Matrix<T>& matrix) const;

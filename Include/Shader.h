@@ -35,9 +35,9 @@ namespace Renderer
 		Shader() = default;
 		~Shader() = default;
 
-		Vector3 Diffuse = { 1.0, 0.0, 0.0 };
+		Vector3 Albedo = { 1.0, 0.0, 0.0 };
 		float Roughness = 1.0f;
-		float Metalness = 0.0f;
+		float Metalness = 1.0f;
 		float Specular = 1.0f;
 		float IOR = 1.2f;
 		float Emission = 0.0f;
@@ -45,15 +45,12 @@ namespace Renderer
 
 		Texture DiffuseTexture;
 
-		Vector3 BSDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light, const std::function<Intersection(const Ray&)>& trace) const;
-		Vector3 BRDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light, const std::function<Intersection(const Ray&)>& trace) const;
+		Vector3 BSDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light) const;
+		Vector3 BRDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light) const;
 
-	private:
-		float Fresnel(const float incidenceAngle, float ior) const;
+		Vector3 Fresnel(const float incidenceAngle, const Vector3& ior) const;
 		Vector3 Geometry(const Vector3& normal, const Vector3& view, const Vector3& lightDirection, const float k) const;
-		Vector3 Distribution() const;
-
-		Vector3 Phong(const Vector3& view, const Vector3& hit, const Light* light, const Vector3& normal) const;
+		float Distribution(const Vector3 normal, const Vector3 half, const float roughness) const;
 	};
 
 }

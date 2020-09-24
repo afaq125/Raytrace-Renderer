@@ -92,16 +92,22 @@ int main()
 		auto s1 = std::make_shared<Sphere>();
 		auto s2 = std::make_shared<Sphere>();
 		auto s3 = std::make_shared<Sphere>();
-		s1->Radius = 6.3f;
+		s1->Radius = 3.3f;
 		s2->Radius = 3.3f;
 		s3->Radius = 3.3f;
 		s1->XForm.SetPosition({ -6.0f, 3.0f, 0.0f });
 		s2->XForm.SetPosition({ 0.0f, 3.0f, -3.0f });
 		s3->XForm.SetPosition({ 6.0f, 3.0f, 0.0f });
-		s1->Material.Diffuse = { 1.0f, 0.0f, 0.0f };
-		s2->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
-		s3->Material.Diffuse = { 0.0f, 0.0f, 1.0f };
-		objects.push_back(s1);
+		s1->Material.Albedo = { 1.0f, 0.0f, 0.0f };
+		s2->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		s3->Material.Albedo = { 0.0f, 0.0f, 1.0f };
+		s1->Material.Metalness = 1.0f;
+		s2->Material.Metalness = 1.0f;
+		s3->Material.Metalness = 1.0f;
+		s1->Material.Roughness = 0.0f;
+		s2->Material.Roughness = 0.5f;
+		s3->Material.Roughness = 1.0f;
+		//objects.push_back(s1);
 		//objects.push_back(s2);
 		//objects.push_back(s3);
 
@@ -125,11 +131,11 @@ int main()
 		p3->XForm.SetPosition({ 10.0f, 10.0f, 0.0f });
 		p4->XForm.SetPosition({ -10.0f, 10.0f, 0.0f });
 		p5->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
-		p1->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
-		p2->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
-		p3->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
-		p4->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
-		p5->Material.Diffuse = { 1.0f, 1.0f, 1.0f };
+		p1->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		p2->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		p3->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		p4->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		p5->Material.Albedo = { 1.0f, 1.0f, 1.0f };
 		p1->SetDirection({ 0.0f, 1.0f, 0.0f });
 		p2->SetDirection({ 0.0f, -1.0f, 0.0f });
 		p3->SetDirection({ -1.0f, 0.0f, 0.0f });
@@ -140,6 +146,29 @@ int main()
 		//objects.push_back(p3);
 		//objects.push_back(p4);
 		//objects.push_back(p5);
+
+		Size rows = 5;
+		Size columns = 5;
+		Size area = rows * columns;
+		float spacing = 4.0f;
+		for (Size i = 0; i < area; ++i)
+		{
+			Size c = i / columns;
+			Size r = i % rows;
+			float x = (static_cast<float>(c) * spacing) - static_cast<float>(rows) - spacing;
+			float y = (static_cast<float>(r) * spacing) - static_cast<float>(columns) - spacing;
+			float z = 0.0f;
+			Vector3 position = { x, y, z };
+
+			auto sphere = std::make_shared<Sphere>();
+			sphere->Radius = 1.75f;
+			sphere->XForm.SetPosition(position);
+			sphere->Material.Albedo = { 1.0f, 0.0f, 0.0f };
+			sphere->Material.Metalness = (1.0f / rows) * r;
+			sphere->Material.Roughness = ((1.0f / columns) * c) + 0.01;
+			sphere->Material.IOR = 0.0f;
+			objects.push_back(sphere);
+		}
 	}
 
 	auto top = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Top.png");
@@ -151,7 +180,10 @@ int main()
 
 	std::vector<std::shared_ptr<Light>> lights;
 	{
-		auto l1 = std::make_shared<Lights::Point>();
+		auto lp1 = std::make_shared<Lights::Point>();
+		auto lp2 = std::make_shared<Lights::Point>();
+		auto lp3 = std::make_shared<Lights::Point>();
+		auto lp4 = std::make_shared<Lights::Point>();
 		auto l2 = std::make_shared<Lights::Area>();
 		auto l3 = std::make_shared<Lights::Enviroment>(
 			std::move(top), 
@@ -161,29 +193,50 @@ int main()
 			std::move(back), 
 			std::move(front));
 		
-		l1->Colour = { 1.0f, 1.0f, 1.0f };
-		l1->ShadowIntensity = 1.0f;
-		l1->XForm.SetPosition({ 10.0f, 10.0f, 10.0f });
+		Vector3 lpc = { 25.0f, 25.0f, 25.0f };
+		auto t = Transform();
+		t.SetPosition({ 15.0f, 15.0f, 15.0f });
+		lp1->Colour = lpc;
+		lp1->ShadowIntensity = 1.0f;
+		lp1->XForm = t;
+
+		t.SetPosition({ -15.0f, 15.0f, 15.0f });
+		lp2->Colour = lpc;
+		lp2->ShadowIntensity = 1.0f;
+		lp2->XForm = t;
+
+		t.SetPosition({ 15.0f, -15.0f, 15.0f });
+		lp3->Colour = lpc;
+		lp3->ShadowIntensity = 1.0f;
+		lp3->XForm = t;
+
+		t.SetPosition({ -15.0f, -15.0f, 15.0f });
+		lp4->Colour = lpc;
+		lp4->ShadowIntensity = 1.0f;
+		lp4->XForm = t;
 
 		l2->Colour = { 1.0f, 1.0f, 0.0f };
 		l2->Samples = 8u;
 		l2->Grid->Width = 10.0f;
 		l2->Grid->Height = 10.0f;
-		l2->RenderGeometry = true;
+		l2->RenderGeometry = false;
 		l2->Grid->XForm.SetPosition({ 0.0f, 10.0f, -20.0f });
 		l2->Grid->SetDirection({ 0.0f, -0.5f, -0.5f });
 
-		//lights.push_back(l1);
+		lights.push_back(lp1);
+		lights.push_back(lp2);
+		lights.push_back(lp3);
+		lights.push_back(lp4);
 		//lights.push_back(l2);
-		lights.push_back(l3);
+		//lights.push_back(l3);
 	}
 
-	const float w = 256.0f;
-	const float h = 256.0f;
+	const float w = 512.0f;
+	const float h = 512.0f;
 	const Vector3 target = { 0.0f, 3.0f, 0.0f };
 	auto camera = Camera(w, h, 1.5f, 0.01f);
 	camera.SetAspectRatio(16.0f, 9.0f);
-	camera.XForm.SetPosition({0.0f, 5.0f, 20.0f});
+	camera.XForm.SetPosition({0.0f, 0.0f, 20.0f});
 	camera.LookAt(target, Y_MINUS_AXIS);
 
 	const auto render = RayTracer(objects, lights, camera).Render(&SaveImage, "Render_Update.png");

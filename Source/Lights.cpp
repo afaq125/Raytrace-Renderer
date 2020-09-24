@@ -4,34 +4,27 @@ using namespace Renderer;
 using namespace Renderer::Math;
 using namespace Renderer::Lights;
 
-Ray Point::Direction(const Vector3& hit) const
-{
-	return Ray(hit, XForm.GetPosition() - hit);
-}
-
 float Point::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
 {
-	const auto ray = Direction(hit);
+	const auto ray = Ray(hit, XForm.GetPosition() - hit);
 	const bool shadow = !IntersectScene(objects, ray, false).empty();
 	return shadow ? 1.0f - ShadowIntensity : 1.0f;
 }
 
-Vector3 Point::IntensityAt(const Ray& ray) const
+Sample Point::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
 {
-	return Colour;
-}
-
-Ray Area::Direction(const Vector3& hit) const
-{
-	return Ray(hit, Grid->XForm.GetPosition() - hit);
+	const auto rayDirection = XForm.GetPosition() - origin;
+	Ray sample(origin, rayDirection);
+	return { sample, Colour, rayDirection.Length() };
 }
 
 float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
 {
 	float shadow = 0.0f;
-	for (Size u = 0; u < Samples; ++u)
+	Size samples = static_cast<Size>(std::round(std::sqrt(static_cast<float>(Samples))));
+	for (Size u = 0; u < samples; ++u)
 	{
-		for (Size v = 0; v < Samples; ++v)
+		for (Size v = 0; v < samples; ++v)
 		{
 			float offset = 0.0f;
 			if (RenderGeometry)
@@ -48,16 +41,16 @@ float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Ve
 			}
 		}
 	}
-	shadow = 1.0f - (shadow / std::pow(static_cast<float>(Samples), 2.0f));
+	shadow = 1.0f - (shadow / std::pow(static_cast<float>(samples), 2.0f));
 	shadow *= 1.0f - ShadowIntensity;
 	return shadow;
 }
 
-Vector3 Area::IntensityAt(const Ray& ray) const
+Sample Area::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
 {
-	return Colour;
+	Ray sample(origin, direction);
+	return { sample, Colour, Grid->XForm.GetPosition().Distance(origin) };
 }
-
 
 Vector3 Area::SamplePlane(const float u, const float v, const Size uRegion, const Size vRegion, const float surfaceOffset) const
 {
@@ -67,34 +60,49 @@ Vector3 Area::SamplePlane(const float u, const float v, const Size uRegion, cons
 	return Grid->UVToWorld(step + uOffset, step + vOffset, surfaceOffset);
 }
 
-
-Ray Enviroment::Direction(const Vector3& hit) const
-{
-	return Ray(NaN, NaN);
-}
-
 float Enviroment::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
 {
 	return 1.0f;
 }
 
-Vector3 Enviroment::IntensityAt(const Ray& ray) const
+Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
 {
-	return SampleCubeMap(ray);
+	const auto axis = Transform(direction, up, { 0.0f,0.0f,0.0f });
+	
+	const float random1 = Random();
+	const float random2 = Random();
+
+	Vector3 hemisphereSample = 0.0f;
+	if (roughness > 1.1f)
+	{
+		hemisphereSample = SampleHemisphere(random1, random2);
+	}
+	else
+	{
+		hemisphereSample = ImportanceSampleHemisphereGGX(random1, random2, roughness);
+	}
+
+	const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
+	Ray sampleRay({ 0.0f,0.0f,0.0f }, hemisphereSampleToWorldSpace);
+	const auto intersection = SampleCubeMap(sampleRay);
+	const auto colour = intersection.SurfaceColour * 0.1f;
+	const auto distance = intersection.Position.Distance(sampleRay.GetOrigin());
+	return { sampleRay, colour, distance };
 }
 
-Vector3 Enviroment::SampleCubeMap(const Ray& ray) const
+Intersection Enviroment::SampleCubeMap(const Ray& ray) const
 {
 	for (const auto& plane : CubeMap)
 	{
-		const auto intersection = plane.Intersect(ray);
+		auto intersection = plane.Intersect(ray);
 		if(intersection.Hit)
 		{
 			const auto uv = plane.WorldToUV(intersection.Position);
-			return plane.Material.DiffuseTexture.Sample(uv[0], uv[1]);
+			intersection.SurfaceColour = plane.Material.DiffuseTexture.Sample(uv[0], uv[1]);
+			return intersection;
 		}
 	}
-	return { NaN, NaN, NaN };
+	return Intersection();
 }
 
 std::vector<Plane> Enviroment::GenerateCubeMap(
@@ -123,12 +131,12 @@ std::vector<Plane> Enviroment::GenerateCubeMap(
 	cube[4].Material.DiffuseTexture = std::move(back);
 	cube[5].Material.DiffuseTexture = std::move(front);
 
-	cube[0].Material.Diffuse = {1.0f, 0.0f, 0.0f};
-	cube[1].Material.Diffuse = {0.0f, 1.0f, 0.0f};
-	cube[2].Material.Diffuse = {0.0f, 0.0f, 1.0f};
-	cube[3].Material.Diffuse = {0.0f, 0.0f, 1.0f};
-	cube[4].Material.Diffuse = {0.0f, 1.0f, 0.0f};
-	cube[5].Material.Diffuse = {1.0f, 0.0f, 0.0f};
+	cube[0].Material.Albedo = {1.0f, 0.0f, 0.0f};
+	cube[1].Material.Albedo = {0.0f, 1.0f, 0.0f};
+	cube[2].Material.Albedo = {0.0f, 0.0f, 1.0f};
+	cube[3].Material.Albedo = {0.0f, 0.0f, 1.0f};
+	cube[4].Material.Albedo = {0.0f, 1.0f, 0.0f};
+	cube[5].Material.Albedo = {1.0f, 0.0f, 0.0f};
 
 	return cube;
 }

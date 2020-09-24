@@ -68,5 +68,6 @@ namespace Renderer
 	std::vector<Intersection> IntersectScene(const std::vector<std::shared_ptr<Object>>& objects, const Ray& ray, bool checkAll);
 	float Random();
 	Vector3 SampleHemisphere(const float r1, const float r2);
+	Vector3 ImportanceSampleHemisphereGGX(const float r1, const float r2, const float roughness);
 	Vector3 SampleCircle(const float r);
 }

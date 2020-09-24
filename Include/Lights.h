@@ -6,26 +6,38 @@ namespace Renderer
 	{
 		using namespace Math;
 
+		struct Sample
+		{
+			Ray IncomingRay;
+			Vector3 Colour;
+			float Distance;
+		};
+
 		class Light
 		{
 		public:
 			Light() = default;
 			virtual ~Light() = default;
 
-			virtual Ray Direction(const Vector3& hit) const = 0;
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const = 0;
-			virtual Vector3 IntensityAt(const Ray& ray) const = 0;
+			// TODO: Change this so its easier to select the sampler type in the shader object. Maybe have a sampler object that can be passed in.
+			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const = 0;
 
 			Vector3 Colour = { 1.0, 1.0, 1.0 };
 			float ShadowIntensity = 0.4f;
+			Size Samples = 8u;
 		};
 
 		class Point : public Light
 		{
 		public:
-			virtual Ray Direction(const Vector3& hit) const override;
+			Point() 
+			{
+				Samples = 1;
+			}
+
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
-			virtual Vector3 IntensityAt(const Ray& ray) const override;
+			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const override;
 
 			Transform XForm;
 		};
@@ -36,9 +48,10 @@ namespace Renderer
 			Area() : 
 				Grid(std::make_shared<Plane>()) 
 			{ 
-				Grid->Material.Diffuse = Colour; 
+				Grid->Material.Albedo = Colour;
+				Samples = 64;
 			}
-			Area(const float width, const float height, const Size samples = 8u) : 
+			Area(const float width, const float height, const Size samples = 64u) : 
 				Area()
 			{
 				Grid->Width = width;
@@ -47,14 +60,11 @@ namespace Renderer
 			}
 			virtual ~Area() = default;
 
-			// Samples squared.
-			Size Samples = 8u;
 			std::shared_ptr<Plane> Grid = nullptr;
 			bool RenderGeometry = false;
 
-			virtual Ray Direction(const Vector3& hit) const override;
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
-			virtual Vector3 IntensityAt(const Ray& ray) const override;
+			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const override;
 
 			Vector3 SamplePlane(const float u, const float v, const Size uRegion, const Size vRegion, const float surfaceOffset = 0.0f) const;
 		};
@@ -62,13 +72,17 @@ namespace Renderer
 		class Enviroment : public Light
 		{
 		public:
-			Enviroment() = default;
+			Enviroment()
+			{
+				Samples = 34;
+			}
 			Enviroment(Texture top,
 				Texture bottom,
 				Texture left,
 				Texture right,
 				Texture back,
-				Texture front)
+				Texture front) :
+				Enviroment()
 			{
 				CubeMap = GenerateCubeMap(
 					std::move(top),
@@ -82,11 +96,10 @@ namespace Renderer
 
 			std::vector<Plane> CubeMap;
 
-			virtual Ray Direction(const Vector3& hit) const override;
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
-			virtual Vector3 IntensityAt(const Ray& ray) const override;
+			virtual Sample Sampler(const Vector3& hit, const Vector3& view, const Vector3& normal, const float roughness) const override;
 
-			Vector3 SampleCubeMap(const Ray& ray) const;
+			Intersection SampleCubeMap(const Ray& ray) const;
 
 			static std::vector<Plane> GenerateCubeMap(
 				Texture top,

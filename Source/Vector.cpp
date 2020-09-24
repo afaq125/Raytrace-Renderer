@@ -105,6 +105,28 @@ void Vector<T, SIZE>::SetNaNsOrINFs(const T value, const bool setNaNs, bool setI
 }
 
 template<typename T, Size SIZE>
+void Vector<T, SIZE>::Pow(const T exponent)
+{
+	for (auto& v : mData)
+	{
+		std::pow(v, exponent);
+	}
+}
+
+template<typename T, Size SIZE>
+Vector<T, SIZE> Vector<T, SIZE>::Mix(const Vector<T, SIZE>& b, const T &amount) const
+{
+	auto result = b;
+	std::transform(
+		mData.begin(),
+		mData.end(),
+		b.Data().begin(),
+		result.Data().begin(), 
+		std::bind(Math::mix<T>, std::placeholders::_1, std::placeholders::_2, amount));
+	return result;
+}
+
+template<typename T, Size SIZE>
 Vector<T, SIZE> Vector<T, SIZE>::MatrixMultiply(const Matrix<T>& matrix) const
 {
 	if (matrix.Rows() != mData.size())

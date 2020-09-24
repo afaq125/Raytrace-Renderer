@@ -75,7 +75,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 		return { false, Vector3(), mSettings.BackgroundColour, nullptr };
 	}
 
-	auto illumination = Vector3();
+	auto irradiance = Vector3();
 	auto intersection = intersections.front();
 	const auto object = intersection.Object;
 	const auto normal = object->CalculateNormal(intersection.Position);
@@ -89,8 +89,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 
 		if (depth < mSettings.MaxShaderDepth)
 		{
-			auto trace = [&](const Ray& ray) -> Intersection { return RayTracer::Trace(ray, depth + 1); };
-			direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light), trace);
+			direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light));
 		}
 
 		if (depth < mSettings.MaxGIDepth)
@@ -98,11 +97,18 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 			indirect = GlobalIllumination(ray, normal, hit, depth);
 		}
 
-		illumination += (direct / PI) + (indirect * 1.0f);
+		irradiance += (direct) + (indirect * 1.0f);
 	}
 
-	illumination.Clamp(0.0, 1.0);
-	intersection.SurfaceColour = illumination;
+	auto colour = irradiance;
+	colour.Clamp(0.0f, 1.0f);
+
+	// HDR tonemapping
+	colour = colour / (colour + Vector3(1.0));
+	// Gamma correct
+	colour.Pow(1.0f / 2.2f);
+
+	intersection.SurfaceColour = colour;
 	return intersection;
 }
 
@@ -122,6 +128,7 @@ Vector3 RayTracer::GlobalIllumination(const Ray& ray, const Vector3& normal, con
 
 		auto giIntersection = Trace(indirectRay, depth + 1);
 		auto colour = (giIntersection.SurfaceColour);// *r1) / pdf;
+		//auto colour = (giIntersection.Object->Material.BSDF(indirectRay, normal, )
 		colour.SetNaNsOrINFs(0.0);
 		indirect += colour;
 	}

@@ -13,7 +13,7 @@ Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3&
 	mAxis(Matrix3()),
 	mPosition(position)
 {
-	float difference = direction.DotProduct(up);
+	const float difference = direction.DotProduct(up);
 	if (difference == 1.0f || difference == -1.0f)
 	{
 		std::cout << "Warning direction and up are perpendicular when creating axis. Returning identity matrix." << std::endl;
@@ -21,9 +21,9 @@ Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3&
 		return;
 	}
 
-	auto z = direction.Normalized();
-	auto y = z.CrossProduct(up).Normalized();
-	auto x = z.CrossProduct(y).Normalized();
+	const auto z = direction.Normalized();
+	const auto y = z.CrossProduct(up).Normalized();
+	const auto x = z.CrossProduct(y).Normalized();
 	for (Size i = 0; i < 3; ++i)
 	{
 		mAxis.Set(i, 0, y[i]);
@@ -50,7 +50,7 @@ std::vector<Intersection> Renderer::IntersectScene(const std::vector<std::shared
 	float distance = Infinity;
 	for (const auto& o : objects)
 	{
-		Intersection intersect = o->Intersect(ray);
+		const Intersection intersect = o->Intersect(ray);
 		if (intersect.Hit)
 		{
 			if (!checkAll)
@@ -78,17 +78,31 @@ float Renderer::Random()
 
 Vector3 Renderer::SampleHemisphere(const float r1, const float r2)
 {
-	float angle = std::sqrt(1.0f - (r1 * r1));
-	float phi = 2.0f * PI * r2;
-	float x = angle * std::cos(phi);
-	float z = angle * std::sin(phi);
+	const float angle = std::sqrt(1.0f - (r1 * r1));
+	const float phi = 2.0f * PI * r2;
+	const float x = angle * std::cos(phi);
+	const float z = angle * std::sin(phi);
 	return { x, r1, z };
+}
+
+Vector3 Renderer::ImportanceSampleHemisphereGGX(const float r1, const float r2, const float roughness)
+{
+	const float a = roughness * roughness;
+
+	const float phi = 2.0f * PI * r1;
+	const float cosTheta = std::sqrt((1.0f - r2) / (1.0f + (a*a - 1.0f) * r2));
+	const float sinTheta = std::sqrt(1.0f - (cosTheta * cosTheta));
+
+	const float x = sinTheta * std::cos(phi);
+	const float z = sinTheta * std::sin(phi);
+
+	return { x, cosTheta, z };
 }
 
 Vector3 Renderer::SampleCircle(const float r)
 {
-	float phi = 2.0f * PI * r;
-	float x = std::cos(phi);
-	float z = std::sin(phi);
+	const float phi = 2.0f * PI * r;
+	const float x = std::cos(phi);
+	const float z = std::sin(phi);
 	return { x, 0.0f, z };
 }

@@ -11,7 +11,7 @@ namespace Renderer
 		struct Settings
 		{
 			Vector3 BackgroundColour = { 0.0f, 0.0f, 0.0f };
-			Size SamplesPerPixel = 50u;
+			Size SamplesPerPixel = 5u;
 			Size MaxDepth = 1u;
 			Size MaxShaderDepth = 1u;
 			Size MaxGIDepth = 0u;
