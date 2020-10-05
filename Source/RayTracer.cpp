@@ -68,7 +68,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 		return Intersection();
 	}
 
-	auto intersections = IntersectScene(mRendableObjects, ray, true);
+	const auto intersections = IntersectScene(mRendableObjects, ray, true);
 
 	if (intersections.empty())
 	{
@@ -81,34 +81,19 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 	const auto normal = object->CalculateNormal(intersection.Position);
 	const auto hit = intersection.Position + (normal * 0.0001f);
 
-	for (const auto& light : mLights)
+	Vector3 direct = 0.0f;
+	Vector3 indirect = 0.0f;
+
+	direct += object->Material.BSDF(ray, normal, hit, mObjects, mLights);
+
+	if (depth < mSettings.MaxGIDepth)
 	{
-		const float shadow = light->Shadow(mRendableObjects, hit);
-		Vector3 direct = 0.0f;
-		Vector3 indirect = 0.0f;
-
-		if (depth < mSettings.MaxShaderDepth)
-		{
-			direct = object->Material.BSDF(ray, normal, hit, shadow, &(*light));
-		}
-
-		if (depth < mSettings.MaxGIDepth)
-		{
-			indirect = GlobalIllumination(ray, normal, hit, depth);
-		}
-
-		irradiance += (direct) + (indirect * 1.0f);
+		indirect = GlobalIllumination(ray, normal, hit, depth);
 	}
 
-	auto colour = irradiance;
-	colour.Clamp(0.0f, 1.0f);
+	irradiance += (direct) + (indirect * 1.0f);
 
-	// HDR tonemapping
-	colour = colour / (colour + Vector3(1.0));
-	// Gamma correct
-	colour.Pow(1.0f / 2.2f);
-
-	intersection.SurfaceColour = colour;
+	intersection.SurfaceColour = irradiance;
 	return intersection;
 }
 
@@ -126,12 +111,12 @@ Vector3 RayTracer::GlobalIllumination(const Ray& ray, const Vector3& normal, con
 		const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
 		const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
 
-		auto giIntersection = Trace(indirectRay, depth + 1);
-		auto colour = (giIntersection.SurfaceColour);// *r1) / pdf;
-		//auto colour = (giIntersection.Object->Material.BSDF(indirectRay, normal, )
-		colour.SetNaNsOrINFs(0.0);
+		const auto giIntersection = Trace(indirectRay, depth + 1);
+		const auto colour = giIntersection.Object->Material.BSDF(indirectRay, normal, hit, mObjects, mLights);
+
 		indirect += colour;
 	}
+	//indirect *= (1.0f / static_cast<float>(mSettings.SecondryBounces)) * pdf;
 	indirect /= static_cast<float>(mSettings.SecondryBounces);
 	indirect /= static_cast<float>(depth + 1);
 	return indirect;

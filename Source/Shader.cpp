@@ -13,77 +13,196 @@ Vector3 Texture::Sample(const float u, const float v) const
 	return { Pixels[0].Get(x, y), Pixels[1].Get(x, y), Pixels[2].Get(x, y) };
 }
 
-Vector3 Shader::BSDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light) const
+void Texture::SetPixel(const float u, const float v, const Vector3& rgb)
 {
-	return BRDF(ray, normal, hit, shadow, light);
+	const auto rows = static_cast<float>(Pixels[0].Rows());
+	const auto columns = static_cast<float>(Pixels[0].Columns());
+	const Size x = static_cast<Size>(u * rows);
+	const Size y = static_cast<Size>(v * columns);
+	Pixels[0].Set(x, y, rgb[0]);
+	Pixels[1].Set(x, y, rgb[1]);
+	Pixels[2].Set(x, y, rgb[2]);
 }
 
-Vector3 Shader::BRDF(const Ray& ray, const Vector3& normal, const Vector3& hit, const float shadow, const Light* light) const
+Vector3 Shader::BSDF(
+	const Ray& ray, 
+	const Vector3& normal, 
+	const Vector3& hit, 
+	const std::vector<std::shared_ptr<Object>>& objects, 
+	const std::vector<std::shared_ptr<Light>>& lights) const
 {
-	Vector3 Lo = 0.0f;
-	const float pdf = 1.0f / (2.0f * PI);
-	Size samples = light->Samples;
-	for (Size i = 0; i < samples; ++i)
+	return BRDF(ray, normal, hit, objects, lights);
+}
+
+Vector3 Shader::BRDF(
+	const Ray& ray, 
+	const Vector3& normal, 
+	const Vector3& hit, 
+	const std::vector<std::shared_ptr<Object>>& objects, 
+	const std::vector<std::shared_ptr<Light>>& lights) const
+{
+
+	const auto viewDirection = (ray.GetOrigin() - hit).Normalized();
+	const auto reflection = Ray::Reflection(normal, viewDirection);
+	const auto NdotV = normal.DotProduct(viewDirection);
+	const auto F0 = Vector3(0.04f).Mix(Albedo, Metalness);
+	
+	const auto pdf = 1.0f / (2.0f * PI);
+	Vector3 ambient = Albedo * Vector3(0.03f);
+	std::shared_ptr<Enviroment> environment = nullptr;
+	for (const auto& light : lights)
 	{
-		const auto viewDirection = (ray.GetOrigin() - hit).Normalized();
-		const auto reflection = Ray::Reflection(normal, viewDirection);
+		environment = std::dynamic_pointer_cast<Enviroment>(light);
+		if (environment)
+		{
+			environment->SamplerType = Enviroment::Sampler::SAMPLE_HEMISPHERE;
 
-		const auto lightSampleSpecular = light->Sampler(hit, reflection, normal, Roughness);
-		const Vector3 lightDirection = lightSampleSpecular.IncomingRay.GetDirection();
+			const auto F = Fresnel(std::max(NdotV, 0.0f), F0);
+			const auto kS = F;
+			auto kD = Vector3(1.0f) - kS;
+			kD *= 1.0f - Metalness;
 
-		const Vector3 halfDirection = (viewDirection + lightDirection).Normalized();
-		const float HdotV = halfDirection.DotProduct(viewDirection);
-		const float NdotV = normal.DotProduct(viewDirection);
-		const float NdotL = normal.DotProduct(lightDirection);
+			Vector3 radiance = 0.0f;
+			const Size samples = environment->Samples;
+			for (Size i = 0; i < samples; ++i)
+			{
+				radiance += environment->Sampler(hit, normal, reflection, 1.0f).Colour;
+			}
+			radiance = radiance * (1.0f / float(samples)) * pdf;
+			const auto diffuse = radiance * Albedo;
+			ambient = (kD * diffuse) * 0.1f;
 
-		const float distance = lightSampleSpecular.Distance;
-		const float attenuation = 1.0f / (distance * distance);
-		const Vector3 radiance = lightSampleSpecular.Colour * attenuation;
-
-		Vector3 F0 = Vector3(0.04f).Mix(Albedo, Metalness);
-
-		const auto NDF = Distribution(normal, halfDirection, Roughness);
-		const auto G = Geometry(normal, viewDirection, lightDirection, Roughness);
-		Vector3 F = Fresnel(std::max(HdotV, 0.0f), F0);
-
-		const auto nominator = G * F * NDF;
-		float denominator = 4.0f * std::max(NdotV, 0.0f) * std::max(NdotL, 0.0f) + 0.001f;
-		Vector3 specular = nominator / std::max(denominator, 0.001f);
-
-		Vector3 kS = F;
-		Vector3 kD = Vector3(1.0f) - kS;
-		kD *= 1.0f - Metalness;
-
-		const auto lightSampleDiffuse = light->Sampler(hit, normal, reflection, 1.2f);
-		Vector3 diffuse = lightSampleDiffuse.Colour * Albedo;
-
-		Lo += (((kD * diffuse) / PI) + specular) * radiance * std::max(NdotL, 0.0f);
+			environment->SamplerType = Enviroment::Sampler::SAMPLE_HEMISPHERE_GGX;
+		}
 	}
-	Lo = Lo * (1.0f / float(samples));// *pdf;
 
-	return Lo;
+	const auto sceneReflections = SceneReflections(
+		ray.GetOrigin(), hit, normal, Roughness, ReflectionDepth, ReflectionSamples, objects);
+
+	Vector3 Lo = 0.0f;
+	for (const auto& light : lights)
+	{
+		Vector3 L = 0.0f;
+		Size samples = light->Samples;
+		for (Size i = 0; i < samples; ++i)
+		{
+			const auto lightSampleSpecular = light->Sampler(hit, reflection, normal, Roughness);
+			const auto lightDirection = lightSampleSpecular.IncomingRay.GetDirection();
+			auto lightColour = lightSampleSpecular.Colour;
+
+			const auto halfDirection = (viewDirection + lightDirection).Normalized();
+			const auto HdotV = halfDirection.DotProduct(viewDirection);
+			const auto NdotL = normal.DotProduct(lightDirection);
+
+			if (environment)
+			{
+				lightColour += sceneReflections * 100.0f;
+			}
+			const auto radiance = light->Attenuation(lightColour, light->Intensity, lightSampleSpecular.Distance);
+
+			const auto NDF = Distribution(normal, halfDirection, Roughness);
+			const auto G = Geometry(normal, viewDirection, lightDirection, Roughness);
+			const auto F = Fresnel(std::max(HdotV, 0.0f), F0);
+
+			const auto nominator = F * NDF * G;
+			const auto denominator = 4.0f * std::max(NdotV, 0.0f) * std::max(NdotL, 0.0f);
+			const auto specular = nominator / std::max(denominator, 0.001f);
+
+			const auto kS = F;
+			auto kD = Vector3(1.0f) - kS;
+			kD *= 1.0f - Metalness;
+
+			L += (((kD * Albedo) / PI) + specular) * radiance * std::max(NdotL, 0.0f);
+		}
+		L = L * (1.0f / float(samples));
+		Lo += L;
+	}
+
+	Vector3 colour = ambient + Lo;
+	//colour.Clamp(0.0f, 1.0f);
+
+	// HDR tonemapping
+	colour = colour / (colour + Vector3(1.0));
+	// Gamma correct
+	colour.Pow(1.0f / 2.2f);
+	return colour;
 }
+
+float Shader::Shadow(const Vector3& hit,
+	const std::vector<std::shared_ptr<Object>>& objects,
+	const std::vector<std::shared_ptr<Light>>& lights) const
+{
+	float shadow = 0.0f;
+	for (const auto& light : lights)
+	{
+		shadow += light->Shadow(objects, hit);
+	}
+	shadow *= (1.0f / static_cast<float>(lights.size()));
+	return shadow;
+}
+
+Vector3 Shader::SceneReflections(
+	Vector3 origin,
+	Vector3 hit,
+	Vector3 normal,
+	float roughness,
+	const Size depth,
+	const Size samples,
+	const std::vector<std::shared_ptr<Object>>& objects) const
+{
+	auto colour = Vector3();
+	for (Size i = 0; i < depth; ++i)
+	{
+		Intersection intersection;
+		for (Size i = 0; i < samples; ++i)
+		{
+			const auto view = (origin - hit).Normalized();
+			const auto reflection = Ray::Reflection(normal, view);
+			const auto axis = Transform(reflection, view, hit);
+			const float random1 = Random();
+			const float random2 = Random();
+			const Vector3 hemisphereSample = ImportanceSampleHemisphereGGX(random1, random2, roughness);
+			const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
+			const auto ray = Ray(hit, hemisphereSampleToWorldSpace);
+
+			const auto intersections = IntersectScene(objects, ray, true);
+			if (intersections.empty())
+			{
+				return Vector3();
+			}
+
+			intersection = intersections.front();
+			colour += intersection.SurfaceColour;
+		}
+		const auto object = intersection.Object;
+		origin = hit;
+		hit = intersection.Position + (normal * 0.0001f);
+		normal = object->CalculateNormal(intersection.Position);
+		colour /= samples;
+	}
+
+	return colour;
+};
 
 Vector3 Shader::Fresnel(const float incidenceAngle, const Vector3& ior) const
 {
 	return ior + (Vector3(1.0f) - ior) * std::pow(1.0f - incidenceAngle, 5.0f);
 }
 
-Vector3 Shader::Geometry(const Vector3& normal, const Vector3& view, const Vector3& lightDirection, const float k) const
+float Shader::Geometry(const Vector3& normal, const Vector3& view, const Vector3& lightDirection, const float k) const
 {
-	auto lSchlickGGXD = [&](const float NDotV, const float roughness) -> float
+	auto lSchlickGGX = [=](const float NDotV, const float roughness) -> float
 	{
-		//float a = roughness;
-		//float k = (a * a) / 2.0;
-		//k = roughness;
+		float r = roughness + 1.0f;
+		float k = (r * r) / 8.0f;
 		return NDotV / (NDotV * (1.0f - k) + k);
 	};
 
 	// GeometrySmith
 	float NdotV = std::max(normal.DotProduct(view), 0.0f);
 	float NdotL = std::max(normal.DotProduct(lightDirection), 0.0f);
-	float GGX1 = lSchlickGGXD(NdotV, k);
-	float GGX2 = lSchlickGGXD(NdotL, k);
+	float GGX1 = lSchlickGGX(NdotV, k);
+	float GGX2 = lSchlickGGX(NdotL, k);
 	return GGX1 * GGX2;
 }
 
@@ -98,5 +217,5 @@ float Shader::Distribution(const Vector3 normal, const Vector3 half, const float
 	float denom = NdotH2 * (a2 - 1.0f) + 1.0f;
 	denom = PI * denom * denom;
 
-	return nom / denom;
+	return nom / std::max(denom, 0.001f);
 }

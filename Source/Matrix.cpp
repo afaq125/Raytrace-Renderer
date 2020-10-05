@@ -214,6 +214,29 @@ T Matrix<T>::Product(const Matrix<T>& matrix) const
 }
 
 template<typename T>
+T Matrix<T>::Sum() const
+{
+	T sum = static_cast<T>(0);
+	for (const auto& value : mData)
+		sum += value;
+	return sum;
+}
+
+template<typename T>
+void Matrix<T>::Normalize()
+{
+	*this = *this * Sum();
+}
+
+template<typename T>
+Matrix<T> Matrix<T>::Normalized() const
+{
+	auto result = *this;
+	result.Normalize();
+	return result;
+}
+
+template<typename T>
 Matrix<T> Matrix<T>::Multiply(const Matrix<T>& matrix) const
 {
 	if (Columns() != matrix.Rows() )

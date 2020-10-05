@@ -4,6 +4,12 @@ using namespace Renderer;
 using namespace Renderer::Math;
 using namespace Renderer::Lights;
 
+Vector3 Light::Attenuation(const Vector3& colour, const float intensity, const float distance) const
+{
+	const auto attenuation = 1.0f / (distance * distance);
+	return (colour * intensity) * attenuation;
+}
+
 float Point::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
 {
 	const auto ray = Ray(hit, XForm.GetPosition() - hit);
@@ -15,7 +21,7 @@ Sample Point::Sampler(const Vector3& origin, const Vector3& direction, const Vec
 {
 	const auto rayDirection = XForm.GetPosition() - origin;
 	Ray sample(origin, rayDirection);
-	return { sample, Colour, rayDirection.Length() };
+	return { sample, Colour * Intensity, rayDirection.Length() };
 }
 
 float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
@@ -49,7 +55,7 @@ float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Ve
 Sample Area::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
 {
 	Ray sample(origin, direction);
-	return { sample, Colour, Grid->XForm.GetPosition().Distance(origin) };
+	return { sample, Colour * Intensity, Grid->XForm.GetPosition().Distance(origin) };
 }
 
 Vector3 Area::SamplePlane(const float u, const float v, const Size uRegion, const Size vRegion, const float surfaceOffset) const
@@ -73,7 +79,7 @@ Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, cons
 	const float random2 = Random();
 
 	Vector3 hemisphereSample = 0.0f;
-	if (roughness > 1.1f)
+	if (SamplerType == Sampler::SAMPLE_HEMISPHERE)
 	{
 		hemisphereSample = SampleHemisphere(random1, random2);
 	}
@@ -85,8 +91,8 @@ Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, cons
 	const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());
 	Ray sampleRay({ 0.0f,0.0f,0.0f }, hemisphereSampleToWorldSpace);
 	const auto intersection = SampleCubeMap(sampleRay);
-	const auto colour = intersection.SurfaceColour * 0.1f;
-	const auto distance = intersection.Position.Distance(sampleRay.GetOrigin());
+	const auto colour = intersection.SurfaceColour * Intensity;
+	const auto distance = 1.0f;
 	return { sampleRay, colour, distance };
 }
 
@@ -103,6 +109,19 @@ Intersection Enviroment::SampleCubeMap(const Ray& ray) const
 		}
 	}
 	return Intersection();
+}
+
+void Enviroment::SetCubeMapPixel(const Ray& ray, const Vector3& rgb)
+{
+	for (auto& plane : CubeMap)
+	{
+		auto intersection = plane.Intersect(ray);
+		if (intersection.Hit)
+		{
+			const auto uv = plane.WorldToUV(intersection.Position);
+			plane.Material.DiffuseTexture.SetPixel(uv[0], uv[1], rgb);
+		}
+	}
 }
 
 std::vector<Plane> Enviroment::GenerateCubeMap(

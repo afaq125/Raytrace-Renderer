@@ -3,12 +3,6 @@
 using namespace Renderer;
 using namespace Renderer::Math;
 
-namespace
-{
-	std::default_random_engine GeneratorC;
-	std::uniform_real_distribution<float> DistributionC(0, 1);
-}
-
 void Camera::SetAspectRatio(const float a, const float b)
 {
 	const float ratio = a / b;
@@ -59,17 +53,15 @@ Ray Camera::CreateRay(const Size pixel, const float randomMultiplier) const
 	const auto uv = PixelToUV(pixel);
 	const auto position = GetPixelPosition(uv[0], uv[1]);
 
-	const float r1 = DistributionC(GeneratorC) - 0.5f;
-	const float r2 = DistributionC(GeneratorC) - 0.5f;
-	const float r3 = DistributionC(GeneratorC) - 0.5f;
+	const float r1 = Random() - 0.5f;
+	const float r2 = Random() - 0.5f;
+	const float r3 = Random() - 0.5f;
 
 	const float rx = (position - XForm.GetPosition())[0] + (r1 * randomMultiplier);
 	const float ry = (position - XForm.GetPosition())[1] + (r2 * randomMultiplier);
 	const float rz = (position - XForm.GetPosition())[2] + (r3 * randomMultiplier);
 
-	const Vector3 origin = XForm.GetPosition();
-	const Vector3 direction = { rx, ry, rz };
-	return Ray(origin, direction);
+	return Ray(XForm.GetPosition(), { rx, ry, rz });
 }
 
 void Camera::Initialise()

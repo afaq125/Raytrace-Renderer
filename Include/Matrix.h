@@ -55,6 +55,9 @@ namespace Renderer
 				const Size areaLimit,
 				Matrix<T>& result);
 			T Product(const Matrix<T>& matrix) const;
+			T Sum() const;
+			void Normalize();
+			Matrix<T> Normalized() const;
 			Matrix<T> Multiply(const Matrix<T>& matrix) const;
 
 			Matrix<T> Convolution2D(const Matrix<T>& kernel) const;
