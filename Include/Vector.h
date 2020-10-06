@@ -55,7 +55,10 @@ namespace Renderer
 			T Distance(const Vector<T, SIZE>& v) const;
 			void SetNaNsOrINFs(const T value, const bool setNaNs = true, bool setINFs = true);
 			void Pow(const T exponent);
-			Vector<T, SIZE> Mix(const Vector<T, SIZE>& b, const T &amount) const;
+
+			static Vector<T, SIZE> Mix(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b, const T &amount);
+			static Vector<T, SIZE> Min(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b);
+			static Vector<T, SIZE> Max(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b);
 
 			// Size dependant functions.
 			Vector<T, SIZE> MatrixMultiply(const Matrix<T>& matrix) const;

@@ -45,7 +45,7 @@ Vector3 Shader::BRDF(
 	const auto viewDirection = (ray.GetOrigin() - hit).Normalized();
 	const auto reflection = Ray::Reflection(normal, viewDirection);
 	const auto NdotV = normal.DotProduct(viewDirection);
-	const auto F0 = Vector3(0.04f).Mix(Albedo, Metalness);
+	const auto F0 = Vector3::Mix(Vector3(0.04f), Albedo, Metalness);
 	
 	const auto pdf = 1.0f / (2.0f * PI);
 	Vector3 ambient = Albedo * Vector3(0.03f);
@@ -55,7 +55,9 @@ Vector3 Shader::BRDF(
 		environment = std::dynamic_pointer_cast<Enviroment>(light);
 		if (environment)
 		{
-			environment->SamplerType = Enviroment::Sampler::SAMPLE_HEMISPHERE;
+			SamplerSettings samplingSettings;
+			samplingSettings.Roughness = 1.0f;
+			samplingSettings.SamplerType = SamplerSettings::Sampler::SAMPLE_HEMISPHERE;
 
 			const auto F = Fresnel(std::max(NdotV, 0.0f), F0);
 			const auto kS = F;
@@ -66,13 +68,11 @@ Vector3 Shader::BRDF(
 			const Size samples = environment->Samples;
 			for (Size i = 0; i < samples; ++i)
 			{
-				radiance += environment->Sampler(hit, normal, reflection, 1.0f).Colour;
+				radiance += environment->Sampler(hit, normal, reflection, samplingSettings).Colour;
 			}
 			radiance = radiance * (1.0f / float(samples)) * pdf;
 			const auto diffuse = radiance * Albedo;
 			ambient = (kD * diffuse) * 0.1f;
-
-			environment->SamplerType = Enviroment::Sampler::SAMPLE_HEMISPHERE_GGX;
 		}
 	}
 
@@ -82,11 +82,15 @@ Vector3 Shader::BRDF(
 	Vector3 Lo = 0.0f;
 	for (const auto& light : lights)
 	{
+		SamplerSettings samplingSettings;
+		samplingSettings.Roughness = Roughness;
+		samplingSettings.SamplerType = SamplerSettings::Sampler::SAMPLE_HEMISPHERE_GGX;
+
 		Vector3 L = 0.0f;
 		Size samples = light->Samples;
 		for (Size i = 0; i < samples; ++i)
 		{
-			const auto lightSampleSpecular = light->Sampler(hit, reflection, normal, Roughness);
+			const auto lightSampleSpecular = light->Sampler(hit, reflection, normal, samplingSettings);
 			const auto lightDirection = lightSampleSpecular.IncomingRay.GetDirection();
 			auto lightColour = lightSampleSpecular.Colour;
 
@@ -96,7 +100,7 @@ Vector3 Shader::BRDF(
 
 			if (environment)
 			{
-				lightColour += sceneReflections * 100.0f;
+				lightColour += sceneReflections;// *100.0f;
 			}
 			const auto radiance = light->Attenuation(lightColour, light->Intensity, lightSampleSpecular.Distance);
 
@@ -178,7 +182,7 @@ Vector3 Shader::SceneReflections(
 		origin = hit;
 		hit = intersection.Position + (normal * 0.0001f);
 		normal = object->CalculateNormal(intersection.Position);
-		colour /= samples;
+		colour /= static_cast<float>(samples);
 	}
 
 	return colour;

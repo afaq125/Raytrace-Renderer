@@ -137,3 +137,18 @@ Vector3 Sphere::CalculateNormal(const Vector3& hit) const
 {
 	return (hit - XForm.GetPosition()).Normalized();
 }
+
+Intersection Cube::Intersect(const Ray& ray) const
+{
+	//Vector3 distance = ;
+
+	//vec3 d = abs(p) - b;
+	//return min(max(d.x, max(d.y, d.z)), 0.0) + length(max(d, 0.0));
+
+	return Intersection();
+}
+
+Vector3 Cube::CalculateNormal(const Vector3& hit) const
+{
+	return Vector3();
+}

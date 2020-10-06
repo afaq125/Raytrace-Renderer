@@ -17,7 +17,7 @@ float Point::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const V
 	return shadow ? 1.0f - ShadowIntensity : 1.0f;
 }
 
-Sample Point::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
+Sample Point::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const
 {
 	const auto rayDirection = XForm.GetPosition() - origin;
 	Ray sample(origin, rayDirection);
@@ -52,7 +52,7 @@ float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Ve
 	return shadow;
 }
 
-Sample Area::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
+Sample Area::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const
 {
 	Ray sample(origin, direction);
 	return { sample, Colour * Intensity, Grid->XForm.GetPosition().Distance(origin) };
@@ -71,7 +71,7 @@ float Enviroment::Shadow(const std::vector<std::shared_ptr<Object>>& objects, co
 	return 1.0f;
 }
 
-Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const
+Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const
 {
 	const auto axis = Transform(direction, up, { 0.0f,0.0f,0.0f });
 	
@@ -79,13 +79,13 @@ Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, cons
 	const float random2 = Random();
 
 	Vector3 hemisphereSample = 0.0f;
-	if (SamplerType == Sampler::SAMPLE_HEMISPHERE)
+	if (settings.SamplerType == SamplerSettings::Sampler::SAMPLE_HEMISPHERE)
 	{
 		hemisphereSample = SampleHemisphere(random1, random2);
 	}
 	else
 	{
-		hemisphereSample = ImportanceSampleHemisphereGGX(random1, random2, roughness);
+		hemisphereSample = ImportanceSampleHemisphereGGX(random1, random2, settings.Roughness);
 	}
 
 	const Vector3 hemisphereSampleToWorldSpace = hemisphereSample.MatrixMultiply(axis.GetAxis());

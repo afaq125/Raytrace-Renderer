@@ -107,22 +107,39 @@ void Vector<T, SIZE>::SetNaNsOrINFs(const T value, const bool setNaNs, bool setI
 template<typename T, Size SIZE>
 void Vector<T, SIZE>::Pow(const T exponent)
 {
-	for (auto& v : mData)
-	{
-		std::pow(v, exponent);
-	}
+	std::for_each(mData.begin(), mData.end(), [&](auto& v) { v = std::pow(v, exponent); });
 }
 
 template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::Mix(const Vector<T, SIZE>& b, const T &amount) const
+Vector<T, SIZE> Vector<T, SIZE>::Mix(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b, const T &amount)
 {
-	auto result = b;
-	std::transform(
-		mData.begin(),
-		mData.end(),
-		b.Data().begin(),
-		result.Data().begin(), 
-		std::bind(Math::mix<T>, std::placeholders::_1, std::placeholders::_2, amount));
+	Vector<T, SIZE> result;
+	for (Size i = 0; i < result.Data().size(); ++i)
+	{
+		result[i] = Math::mix<T>(a[i], b[i], amount);
+	}
+	return result;
+}
+
+template<typename T, Size SIZE>
+Vector<T, SIZE> Vector<T, SIZE>::Min(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b)
+{
+	Vector<T, SIZE> result;
+	for (Size i = 0; i < result.Data().size(); ++i)
+	{
+		result[i] = std::min(a[i], b[i]);
+	}
+	return result;
+}
+
+template<typename T, Size SIZE>
+Vector<T, SIZE> Vector<T, SIZE>::Max(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b)
+{
+	Vector<T, SIZE> result;
+	for (Size i = 0; i < result.Data().size(); ++i)
+	{
+		result[i] = std::max(a[i], b[i]);
+	}
 	return result;
 }
 

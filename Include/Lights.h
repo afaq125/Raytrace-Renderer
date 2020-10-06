@@ -13,6 +13,18 @@ namespace Renderer
 			float Distance;
 		};
 
+		struct SamplerSettings
+		{
+			enum class Sampler
+			{
+				SAMPLE_HEMISPHERE,
+				SAMPLE_HEMISPHERE_GGX
+			};
+
+			Sampler SamplerType = Sampler::SAMPLE_HEMISPHERE;
+			float Roughness;
+		};
+
 		class Light
 		{
 		public:
@@ -21,7 +33,7 @@ namespace Renderer
 
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const = 0;
 			// TODO: Change this so its easier to select the sampler type in the shader object. Maybe have a sampler object that can be passed in.
-			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const = 0;
+			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const = 0;
 			virtual Vector3 Attenuation(const Vector3& colour, const float intensity, const float distance) const;
 
 			float Intensity = 1.0f;
@@ -39,7 +51,7 @@ namespace Renderer
 			}
 
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
-			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const override;
+			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const override;
 
 			Transform XForm;
 		};
@@ -66,7 +78,7 @@ namespace Renderer
 			bool RenderGeometry = false;
 
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
-			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const float roughness) const override;
+			virtual Sample Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const override;
 
 			Vector3 SamplePlane(const float u, const float v, const Size uRegion, const Size vRegion, const float surfaceOffset = 0.0f) const;
 		};
@@ -96,17 +108,10 @@ namespace Renderer
 			}
 			virtual ~Enviroment() = default;
 
-			enum class Sampler
-			{
-				SAMPLE_HEMISPHERE,
-				SAMPLE_HEMISPHERE_GGX
-			};
-
 			std::vector<Plane> CubeMap;
-			Sampler SamplerType = Sampler::SAMPLE_HEMISPHERE;
 
 			virtual float Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const override;
-			virtual Sample Sampler(const Vector3& hit, const Vector3& view, const Vector3& normal, const float roughness) const override;
+			virtual Sample Sampler(const Vector3& hit, const Vector3& view, const Vector3& normal, const SamplerSettings& settings) const override;
 
 			Intersection SampleCubeMap(const Ray& ray) const;
 			void SetCubeMapPixel(const Ray& ray, const Vector3& rgb);

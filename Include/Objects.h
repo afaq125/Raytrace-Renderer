@@ -59,4 +59,18 @@ namespace Renderer
 		Intersection Intersect(const Ray& ray) const override;
 		Vector3 CalculateNormal(const Vector3& hit) const override;
 	};
+
+	class Cube : public Object
+	{
+	public:
+		Cube() = default;
+		virtual ~Cube() {}
+
+		float Width = 1.0f;
+		float Height = 1.0f;
+		float Length = 1.0f;
+
+		Intersection Intersect(const Ray& ray) const override;
+		Vector3 CalculateNormal(const Vector3& hit) const override;
+	};
 }
