@@ -5,34 +5,55 @@ namespace Renderer
 	using namespace Math;
 	using namespace Lights;
 
+	class Scene
+	{
+	public:
+		Scene(
+			std::vector<std::shared_ptr<Object>> Objects,
+			std::vector<std::shared_ptr<Light>> Lights,
+			Camera camera = Camera(1024, 1024)) :
+			Objects(std::move(Objects)),
+			Lights(std::move(Lights)),
+			Cam(camera)
+		{ 
+			Initialise();
+		}
+
+		Scene() = default;
+		~Scene() = default;
+		Scene(const Scene&) = delete;
+		Scene(Scene&&) = delete;
+		Scene& operator=(const Scene& scene) = delete;
+		
+		void Initialise();
+
+		std::vector<std::shared_ptr<Object>> Objects;
+		std::vector<std::shared_ptr<Light>> Lights;
+		Camera Cam = Camera(1024, 1024);
+	};
+
 	class RayTracer
 	{
 	public:
 		struct Settings
 		{
 			Vector3 BackgroundColour = { 0.0f, 0.0f, 0.0f };
-			Size SamplesPerPixel = 30u;
+			Size SamplesPerPixel = 4u;
 			Size MaxDepth = 1u;
-			Size MaxGIDepth = 0u;
+			Size MaxGIDepth = 2u;
 			Size SecondryBounces = 20u;
 		};
 
 		RayTracer() = delete;
 		RayTracer(
-			const std::vector<std::shared_ptr<Object>>& objects, 
-			const std::vector<std::shared_ptr<Light>>& lights,
-			const Camera camera = Camera(1024, 1024),
+			const Scene& scene,
 			const RayTracer::Settings settings = RayTracer::Settings()) :
-			mObjects(objects),
-			mLights(lights),
-			mCamera(camera),
+			mScene(scene),
+			mCamera(scene.Cam),
 			mSettings(settings)
 		{
-			Initialise();
 		}
 		~RayTracer() = default;
-
-		void Initialise();
 
 		Camera::Viewport Render(
 			const std::function<void(const Camera::Viewport&, const std::string&)>& save = [](const Camera::Viewport& viewport, const std::string& path) -> void {},
@@ -43,11 +64,8 @@ namespace Renderer
 	private:
 		Vector3 GlobalIllumination(const Ray& ray, const Vector3& normal, const Vector3& hit, const Size depth) const;
 
-		const std::vector<std::shared_ptr<Object>>& mObjects;
-		const std::vector<std::shared_ptr<Light>>& mLights;
+		const std::reference_wrapper<const Scene> mScene;
 		Camera mCamera;
 		const Settings mSettings;
-
-		std::vector<std::shared_ptr<Object>> mRendableObjects;
 	};
 }

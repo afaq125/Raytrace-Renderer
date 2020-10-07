@@ -34,7 +34,7 @@ namespace Renderer
 	{
 	public:
 		Shader() = default;
-		~Shader() = default;
+		virtual ~Shader() {};
 
 		Vector3 Albedo = { 1.0, 0.0, 0.0 };
 		float Roughness = 1.0f;

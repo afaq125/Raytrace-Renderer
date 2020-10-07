@@ -2,6 +2,7 @@
 
 #include "FreeImage.h"
 #include "Renderer.h"
+#include <cctype>
 
 using namespace Renderer;
 using namespace Renderer::Math;
@@ -42,7 +43,6 @@ Texture LoadImage(const std::string& file, const bool normalise = true)
 		FIBITMAP *bitmap = FreeImage_Load(format, file.c_str());
 		const unsigned int height = FreeImage_GetHeight(bitmap);
 		const unsigned int width = FreeImage_GetWidth(bitmap);
-		const unsigned int area = width * height;
 		result = Texture(width, height);
 		RGBQUAD color;
 
@@ -72,7 +72,7 @@ Texture LoadImage(const std::string& file, const bool normalise = true)
 	return result;
 }
 
-Matrix<float> GaussianKernel(const float multiplier)
+Matrix<float> GaussianKernel(const float multiplier = 1.0f)
 {
 	Matrix<float> kernel =
 	{ { 0.003765f,	0.015019f,	0.023792f,	0.015019f,	0.003765f },
@@ -80,72 +80,87 @@ Matrix<float> GaussianKernel(const float multiplier)
 	{ 0.023792f,	0.094907f,	0.150342f,	0.094907f,	0.023792f },
 	{ 0.015019f,	0.059912f,	0.094907f,	0.059912f,	0.015019f },
 	{ 0.003765f,	0.015019f,	0.023792f,	0.015019f,	0.003765f } };
-	kernel *= 1.0f;
+	kernel *= multiplier;
 	return kernel;
 }
 
 int main()
 {
-	//Create scene.
-	std::vector<std::shared_ptr<Object>> objects;
+	Scene giScene;
 	{
-		auto s1 = std::make_shared<Sphere>();
-		auto s2 = std::make_shared<Sphere>();
-		auto s3 = std::make_shared<Sphere>();
-		s1->Radius = 3.3f;
-		s2->Radius = 3.3f;
-		s3->Radius = 3.3f;
-		s1->XForm.SetPosition({ -6.0f, 3.0f, 0.0f });
-		s2->XForm.SetPosition({ 0.0f, 3.0f, -3.0f });
-		s3->XForm.SetPosition({ 6.0f, 3.0f, 0.0f });
-		s1->Material.Albedo = { 1.0f, 0.0f, 0.0f };
-		s2->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		s3->Material.Albedo = { 0.0f, 0.0f, 1.0f };
-		s1->Material.Metalness = 1.0f;
-		s2->Material.Metalness = 1.0f;
-		s3->Material.Metalness = 1.0f;
-		s1->Material.Roughness = 0.0f;
-		s2->Material.Roughness = 0.5f;
-		s3->Material.Roughness = 1.0f;
-		//objects.push_back(s1);
-		//objects.push_back(s2);
-		//objects.push_back(s3);
+		const float width = 512.0f;
+		const float height = 512.0f;
+		const Vector3 target = { 0.0f, 3.0f, 0.0f };
+		auto camera = Camera(width, height, 1.5f, 0.01f);
+		camera.SetAspectRatio(16.0f, 9.0f);
+		camera.XForm.SetPosition({ 0.0f, 5.0f, 20.0f });
+		camera.LookAt(target, Y_MINUS_AXIS);
 
-		auto p1 = std::make_shared<Plane>();
-		auto p2 = std::make_shared<Plane>();
-		auto p3 = std::make_shared<Plane>();
-		auto p4 = std::make_shared<Plane>();
-		auto p5 = std::make_shared<Plane>();
-		p1->Width = 2000.0f;
-		p2->Width = 20.0f;
-		p3->Width = 20.0f;
-		p4->Width = 20.0f;
-		p5->Width = 20.0f;
-		p1->Height = 2000.0f;
-		p2->Height = 20.0f;
-		p3->Height = 20.0f;
-		p4->Height = 20.0f;
-		p5->Height = 20.0f;
-		p1->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
-		p2->XForm.SetPosition({ 0.0f, 20.0f, 0.0f });
-		p3->XForm.SetPosition({ 10.0f, 10.0f, 0.0f });
-		p4->XForm.SetPosition({ -10.0f, 10.0f, 0.0f });
-		p5->XForm.SetPosition({ 0.0f, 10.0f, -10.0f });
-		p1->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		p2->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		p3->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		p4->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		p5->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		p1->SetDirection({ 0.0f, 1.0f, 0.0f });
-		p2->SetDirection({ 0.0f, -1.0f, 0.0f });
-		p3->SetDirection({ -1.0f, 0.0f, 0.0f });
-		p4->SetDirection({ 1.0f, 0.0f, 0.0f });
-		p5->SetDirection({ 0.0f, 0.0f, 1.0f });
-		//objects.push_back(p1);
-		//objects.push_back(p2);
-		//objects.push_back(p3);
-		//objects.push_back(p4);
-		//objects.push_back(p5);
+		auto sphere1 = std::make_shared<Sphere>();
+		auto sphere2 = std::make_shared<Sphere>();
+		auto sphere3 = std::make_shared<Sphere>();
+		sphere1->Radius = 3.3f;
+		sphere2->Radius = 3.3f;
+		sphere3->Radius = 3.3f;
+		sphere1->XForm.SetPosition({ -6.0f, 3.0f, 0.0f });
+		sphere2->XForm.SetPosition({ 0.0f, 3.0f, -3.0f });
+		sphere3->XForm.SetPosition({ 6.0f, 3.0f, 0.0f });
+		sphere1->Material.Albedo = { 1.0f, 0.0f, 0.0f };
+		sphere2->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		sphere3->Material.Albedo = { 0.0f, 1.0f, 1.0f };
+		sphere1->Material.Metalness = 1.0f;
+		sphere2->Material.Metalness = 1.0f;
+		sphere3->Material.Metalness = 1.0f;
+		sphere1->Material.Roughness = 0.1f;
+		sphere2->Material.Roughness = 0.2f;
+		sphere3->Material.Roughness = 0.1f;
+
+		auto plane1 = std::make_shared<Plane>();
+		plane1->Width = 2000.0f;
+		plane1->Height = 2000.0f;
+		plane1->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
+		plane1->SetDirection({ 0.0f, 1.0f, 0.0f });
+		plane1->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		plane1->Material.Metalness = 0.0f;
+		plane1->Material.Roughness = 1.0f;
+		plane1->Material.ReflectionSamples = 0u;
+		plane1->Material.ReflectionDepth = 0u;
+
+		auto pointLight1 = std::make_shared<Lights::Point>();
+		pointLight1->Intensity = 18.0f;
+		pointLight1->Colour = { 0.9f, 0.9f, 0.9f };
+		pointLight1->ShadowIntensity = 1.0f;
+		pointLight1->XForm.SetPosition({ 10.0f, 10.0f, 10.0f });
+
+		auto enviromentLight = std::make_shared<Lights::Enviroment>(
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Top.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Bottom.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Left.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Right.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Back.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Front.png")));
+		enviromentLight->Intensity = 10.0f;
+
+		giScene.Cam = camera;
+
+		giScene.Objects.push_back(sphere1);
+		giScene.Objects.push_back(sphere2);
+		giScene.Objects.push_back(sphere3);
+		giScene.Objects.push_back(plane1);
+
+		giScene.Lights.push_back(pointLight1);
+		//giScene.Lights.push_back(enviromentLight);
+	}
+
+	Scene pbrScene;
+	{
+		const float width = 512.0f;
+		const float height = 512.0f;
+		const Vector3 target = { 0.0f, 3.0f, 0.0f };
+		auto camera = Camera(width, height, 1.5f, 0.01f);
+		camera.SetAspectRatio(16.0f, 9.0f);
+		camera.XForm.SetPosition({ 0.0f, 5.0f, 20.0f });
+		camera.LookAt(target, Y_MINUS_AXIS);
 
 		Size rows = 5;
 		Size columns = 5;
@@ -163,84 +178,110 @@ int main()
 			auto sphere = std::make_shared<Sphere>();
 			sphere->Radius = 1.75f;
 			sphere->XForm.SetPosition(position);
-			sphere->Material.Albedo = { 1.0f, 0.0f, 0.0f };
-			sphere->Material.Metalness = (1.0f / rows) * r;
-			sphere->Material.Roughness = ((1.0f / columns) * c) + 0.01;
+			sphere->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+			sphere->Material.Metalness = Clamp((1.0f / rows) * r, 0.0f, 1.0f);
+			sphere->Material.Roughness = Clamp((1.0f / columns) * c, 0.05f, 1.0f);
+			sphere->Material.Albedo[0] = sphere->Material.Metalness;
 			sphere->Material.IOR = 0.0f;
-			objects.push_back(sphere);
+			pbrScene.Objects.push_back(sphere);
 		}
+
+		float pointLightIntensity = 18.0f;
+		Vector3 pointLightColour = { 0.9f, 0.9f, 0.9f };
+		float pointLightDistance = 10.0f;
+
+		auto pointLight1 = std::make_shared<Lights::Point>();
+		pointLight1->Intensity = pointLightIntensity;
+		pointLight1->Colour = pointLightColour;
+		pointLight1->ShadowIntensity = 1.0f;
+		pointLight1->XForm.SetPosition({ pointLightDistance, pointLightDistance, pointLightDistance });
+
+		auto pointLight2 = std::make_shared<Lights::Point>();
+		pointLight2->Intensity = pointLightIntensity;
+		pointLight2->Colour = pointLightColour;
+		pointLight2->ShadowIntensity = 1.0f;
+		pointLight2->XForm.SetPosition({ -pointLightDistance, pointLightDistance, pointLightDistance });
+
+		auto pointLight3 = std::make_shared<Lights::Point>();
+		pointLight3->Intensity = pointLightIntensity;
+		pointLight3->Colour = pointLightColour;
+		pointLight3->ShadowIntensity = 1.0f;
+		pointLight3->XForm.SetPosition({ pointLightDistance, -pointLightDistance, pointLightDistance });
+
+		auto pointLight4 = std::make_shared<Lights::Point>();
+		pointLight4->Intensity = pointLightIntensity;
+		pointLight4->Colour = pointLightColour;
+		pointLight4->ShadowIntensity = 1.0f;
+		pointLight4->XForm.SetPosition({ -pointLightDistance, -pointLightDistance, pointLightDistance });
+
+		auto enviromentLight = std::make_shared<Lights::Enviroment>(
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Top.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Bottom.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Left.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Right.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Back.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Front.png")));
+		enviromentLight->Intensity = 10.0f;
+
+		pbrScene.Cam = camera;
+
+		pbrScene.Lights.push_back(pointLight1);
+		pbrScene.Lights.push_back(pointLight2);
+		pbrScene.Lights.push_back(pointLight3);
+		pbrScene.Lights.push_back(pointLight4);
+		pbrScene.Lights.push_back(enviromentLight);
 	}
 
-	auto top = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Top.png");
-	auto bottom = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Bottom.png");
-	auto left = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Left.png");
-	auto right = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Right.png");
-	auto back = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Back.png");
-	auto front = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Front.png");
-
-	std::vector<std::shared_ptr<Light>> lights;
+	Scene blockCityScene;
 	{
-		auto lp1 = std::make_shared<Lights::Point>();
-		auto lp2 = std::make_shared<Lights::Point>();
-		auto lp3 = std::make_shared<Lights::Point>();
-		auto lp4 = std::make_shared<Lights::Point>();
-		auto l2 = std::make_shared<Lights::Area>();
-		auto l3 = std::make_shared<Lights::Enviroment>(
-			std::move(top), 
-			std::move(bottom), 
-			std::move(left), 
-			std::move(right), 
-			std::move(back), 
-			std::move(front));
-		
-		Vector3 lpc = { 25.0f, 25.0f, 25.0f };
-		auto t = Transform();
-		t.SetPosition({ 15.0f, 15.0f, 15.0f });
-		lp1->Colour = lpc;
-		lp1->ShadowIntensity = 1.0f;
-		lp1->XForm = t;
+		const float width = 512.0f;
+		const float height = 512.0f;
+		const Vector3 target = { 0.0f, 3.0f, 0.0f };
+		auto camera = Camera(width, height, 1.5f, 0.01f);
+		camera.SetAspectRatio(16.0f, 9.0f);
+		camera.XForm.SetPosition({ 0.0f, 5.0f, 20.0f });
+		camera.LookAt(target, Y_MINUS_AXIS);
 
-		t.SetPosition({ -15.0f, 15.0f, 15.0f });
-		lp2->Colour = lpc;
-		lp2->ShadowIntensity = 1.0f;
-		lp2->XForm = t;
+		auto plane1 = std::make_shared<Plane>();
+		plane1->Width = 2000.0f;
+		plane1->Height = 2000.0f;
+		plane1->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
+		plane1->SetDirection({ 0.0f, 1.0f, 0.0f });
+		plane1->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		plane1->Material.Metalness = 0.0f;
+		plane1->Material.Roughness = 1.0f;
 
-		t.SetPosition({ 15.0f, -15.0f, 15.0f });
-		lp3->Colour = lpc;
-		lp3->ShadowIntensity = 1.0f;
-		lp3->XForm = t;
+		auto pointLight1 = std::make_shared<Lights::Point>();
+		pointLight1->Intensity = 18.0f;
+		pointLight1->Colour = { 0.9f, 0.9f, 0.9f };
+		pointLight1->ShadowIntensity = 1.0f;
+		pointLight1->XForm.SetPosition({ 10.0f, 10.0f, 10.0f });
 
-		t.SetPosition({ -15.0f, -15.0f, 15.0f });
-		lp4->Colour = lpc;
-		lp4->ShadowIntensity = 1.0f;
-		lp4->XForm = t;
+		auto enviromentLight = std::make_shared<Lights::Enviroment>(
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Top.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Bottom.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Left.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Right.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Back.png")),
+			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Front.png")));
+		enviromentLight->Intensity = 10.0f;
 
-		l2->Colour = { 1.0f, 1.0f, 0.0f };
-		l2->Samples = 8u;
-		l2->Grid->Width = 10.0f;
-		l2->Grid->Height = 10.0f;
-		l2->RenderGeometry = false;
-		l2->Grid->XForm.SetPosition({ 0.0f, 10.0f, -20.0f });
-		l2->Grid->SetDirection({ 0.0f, -0.5f, -0.5f });
+		blockCityScene.Cam = camera;
 
-		lights.push_back(lp1);
-		lights.push_back(lp2);
-		lights.push_back(lp3);
-		lights.push_back(lp4);
-		//lights.push_back(l2);
-		//lights.push_back(l3);
+		blockCityScene.Objects.push_back(plane1);
+
+		blockCityScene.Lights.push_back(pointLight1);
+		blockCityScene.Lights.push_back(enviromentLight);
 	}
 
-	const float w = 512.0f;
-	const float h = 512.0f;
-	const Vector3 target = { 0.0f, 3.0f, 0.0f };
-	auto camera = Camera(w, h, 1.5f, 0.01f);
-	camera.SetAspectRatio(16.0f, 9.0f);
-	camera.XForm.SetPosition({0.0f, 0.0f, 20.0f});
-	camera.LookAt(target, Y_MINUS_AXIS);
+	const auto RenderGIScene = RayTracer(giScene).Render(&SaveImage, "Render_Update.png");
+	SaveImage(RenderGIScene, "Render_GI.png");
 
-	const auto render = RayTracer(objects, lights, camera).Render(&SaveImage, "Render_Update.png");
-	SaveImage(render, "Render_A.png");
+	//const auto RenderPBRScene = RayTracer(pbrScene).Render(&SaveImage, "Render_Update.png");
+	//SaveImage(RenderPBRScene, "Render_PBR.png");
+
+	//const auto RenderBlockCityScene = RayTracer(blockCityScene).Render(&SaveImage, "Render_Update.png");
+	//SaveImage(RenderBlockCityScene, "Render_BlockCity.png");
 
 	int input;
 	std::cin >> input;

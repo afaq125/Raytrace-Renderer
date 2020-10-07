@@ -14,16 +14,14 @@ namespace
 	}
 }
 
-void RayTracer::Initialise()
+void Scene::Initialise()
 {
-	mRendableObjects = mObjects;
-
-	for (const auto& light : mLights)
+	for (const auto& light : Lights)
 	{
 		std::shared_ptr<Lights::Area> area = std::dynamic_pointer_cast<Lights::Area>(light);
 		if (area != nullptr && area->RenderGeometry)
 		{
-			mRendableObjects.push_back(area->Grid);
+			Objects.push_back(area->Grid);
 		}
 	}
 }
@@ -68,7 +66,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 		return Intersection();
 	}
 
-	const auto intersections = IntersectScene(mRendableObjects, ray, true);
+	const auto intersections = IntersectScene(mScene.get().Objects, ray, true);
 
 	if (intersections.empty())
 	{
@@ -84,7 +82,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 	Vector3 direct = 0.0f;
 	Vector3 indirect = 0.0f;
 
-	direct += object->Material.BSDF(ray, normal, hit, mObjects, mLights);
+	direct += object->Material.BSDF(ray, normal, hit, mScene.get().Objects, mScene.get().Lights);
 
 	if (depth < mSettings.MaxGIDepth)
 	{
@@ -112,12 +110,11 @@ Vector3 RayTracer::GlobalIllumination(const Ray& ray, const Vector3& normal, con
 		const Ray indirectRay(axis.GetPosition(), hemisphereSampleToWorldSpace);
 
 		const auto giIntersection = Trace(indirectRay, depth + 1);
-		const auto colour = giIntersection.Object->Material.BSDF(indirectRay, normal, hit, mObjects, mLights);
+		const auto colour = (giIntersection.SurfaceColour * random1) / pdf;
 
 		indirect += colour;
 	}
-	//indirect *= (1.0f / static_cast<float>(mSettings.SecondryBounces)) * pdf;
-	indirect /= static_cast<float>(mSettings.SecondryBounces);
-	indirect /= static_cast<float>(depth + 1);
+	indirect *= (1.0f / static_cast<float>(mSettings.SecondryBounces));
+	indirect *= (1.0f / static_cast<float>(depth + 1));
 	return indirect;
 }
