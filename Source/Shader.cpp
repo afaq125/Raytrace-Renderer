@@ -41,13 +41,14 @@ Vector3 Shader::BRDF(
 	const std::vector<std::shared_ptr<Object>>& objects, 
 	const std::vector<std::shared_ptr<Light>>& lights) const
 {
-
 	const auto viewDirection = (ray.GetOrigin() - hit).Normalized();
 	const auto reflection = Ray::Reflection(normal, viewDirection);
 	const auto NdotV = normal.DotProduct(viewDirection);
 	const auto F0 = Vector3::Mix(Vector3(0.04f), Albedo, Metalness);
+
+	const float shadow = Shadow(hit, objects, lights);
 	
-	const auto pdf = 1.0f / (2.0f * PI);
+	constexpr auto pdf = 1.0f / (2.0f * PI);
 	Vector3 ambient = Albedo * Vector3(0.03f);
 	std::shared_ptr<Enviroment> environment = nullptr;
 	for (const auto& light : lights)
@@ -100,7 +101,7 @@ Vector3 Shader::BRDF(
 
 			if (environment)
 			{
-				lightColour += sceneReflections;// *100.0f;
+				lightColour += sceneReflections * 10.0f;
 			}
 			const auto radiance = light->Attenuation(lightColour, light->Intensity, lightSampleSpecular.Distance);
 
@@ -122,7 +123,7 @@ Vector3 Shader::BRDF(
 		Lo += L;
 	}
 
-	Vector3 colour = ambient + Lo;
+	Vector3 colour = (ambient + Lo) * shadow;
 	//colour.Clamp(0.0f, 1.0f);
 
 	// HDR tonemapping
@@ -158,7 +159,7 @@ Vector3 Shader::SceneReflections(
 	for (Size i = 0; i < depth; ++i)
 	{
 		Intersection intersection;
-		for (Size i = 0; i < samples; ++i)
+		for (Size j = 0; j < samples; ++j)
 		{
 			const auto view = (origin - hit).Normalized();
 			const auto reflection = Ray::Reflection(normal, view);

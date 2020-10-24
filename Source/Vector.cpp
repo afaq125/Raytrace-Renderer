@@ -116,7 +116,7 @@ Vector<T, SIZE> Vector<T, SIZE>::Mix(const Vector<T, SIZE>& a, const Vector<T, S
 	Vector<T, SIZE> result;
 	for (Size i = 0; i < result.Data().size(); ++i)
 	{
-		result[i] = Math::mix<T>(a[i], b[i], amount);
+		result[i] = Math::Mix<T>(a[i], b[i], amount);
 	}
 	return result;
 }

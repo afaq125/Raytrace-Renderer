@@ -73,7 +73,6 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 		return { false, Vector3(), mSettings.BackgroundColour, nullptr };
 	}
 
-	auto irradiance = Vector3();
 	auto intersection = intersections.front();
 	const auto object = intersection.Object;
 	const auto normal = object->CalculateNormal(intersection.Position);
@@ -85,11 +84,11 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 	direct += object->Material.BSDF(ray, normal, hit, mScene.get().Objects, mScene.get().Lights);
 
 	if (depth < mSettings.MaxGIDepth)
-	{
-		indirect = GlobalIllumination(ray, normal, hit, depth);
+	{                    
+		indirect = GlobalIllumination(ray, normal, hit, depth);                                                   
 	}
 
-	irradiance += (direct) + (indirect * 1.0f);
+	const auto irradiance = (direct / ((indirect * 2.0f) + PI)) * object->Material.Albedo;
 
 	intersection.SurfaceColour = irradiance;
 	return intersection;
@@ -98,7 +97,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 Vector3 RayTracer::GlobalIllumination(const Ray& ray, const Vector3& normal, const Vector3& hit, const Size depth) const 
 {
 	Vector3 indirect = 0.0f;
-	const float pdf = 1.0f / (2.0f * PI);
+	constexpr float pdf = 1.0f / (2.0f * PI);
 	const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
 	for (Size i = 0; i < mSettings.SecondryBounces; ++i)
 	{

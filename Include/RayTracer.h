@@ -38,10 +38,10 @@ namespace Renderer
 		struct Settings
 		{
 			Vector3 BackgroundColour = { 0.0f, 0.0f, 0.0f };
-			Size SamplesPerPixel = 4u;
-			Size MaxDepth = 1u;
+			Size SamplesPerPixel = 20u;
+			Size MaxDepth = 2u;
 			Size MaxGIDepth = 2u;
-			Size SecondryBounces = 20u;
+			Size SecondryBounces = 10u;
 		};
 
 		RayTracer() = delete;

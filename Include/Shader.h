@@ -37,13 +37,13 @@ namespace Renderer
 		virtual ~Shader() {};
 
 		Vector3 Albedo = { 1.0, 0.0, 0.0 };
-		float Roughness = 1.0f;
+		float Roughness = 0.1f;
 		float Metalness = 1.0f;
 		float IOR = 1.2f;
 		float Emission = 0.0f;
 		Vector3 Displacement = { 0.0f, 0.0f, 0.0f };
-		Size ReflectionDepth = 2u;
-		Size ReflectionSamples = 32u;
+		Size ReflectionDepth = 1u;
+		Size ReflectionSamples = 16u;
 
 		Texture DiffuseTexture;
 

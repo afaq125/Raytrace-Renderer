@@ -33,7 +33,9 @@ Matrix<T>::Matrix(std::vector<T>&& data, const Size rows, const Size columns) :
 	mColumns(columns)
 {
 	if (Area() != data.size())
-		std::logic_error("Row and Columns area does not match data size.");
+	{
+		throw std::logic_error("Row and Columns area does not match data size.");
+	}
 	mData = std::move(data);
 }
 
@@ -57,7 +59,9 @@ template<typename T>
 void Matrix<T>::Identity()
 {	
 	if (!IsSqaure())
+	{
 		return;
+	}
 
 	std::fill(mData.begin(), mData.end(), static_cast<T>(0));
 	Size offset = 0;
@@ -123,7 +127,9 @@ template<typename T>
 T Matrix<T>::Determinant() const
 {
 	if (!IsSqaure())
+	{
 		throw std::logic_error("Matrix is not square.");
+	}
 
 	std::vector<T> determinants(Columns());
 	for (Size i = 0; i < Columns(); ++i)
@@ -173,7 +179,9 @@ void Matrix<T>::Laplace(
 	Matrix<T>& result)
 {
 	if (!matrix.IsSqaure() || matrix.Area() < area)
+	{
 		throw std::logic_error("Matrix is not square or already smaller than final area.");
+	}
 
 	if (matrix.Area() != area)
 	{
@@ -209,7 +217,9 @@ T Matrix<T>::Product(const Matrix<T>& matrix) const
 {
 	T sum = static_cast<T>(0);
 	for (Size i = 0; i < Area(); ++i)
+	{
 		sum += mData[i] * matrix[i];
+	}
 	return sum;
 }
 
@@ -218,7 +228,9 @@ T Matrix<T>::Sum() const
 {
 	T sum = static_cast<T>(0);
 	for (const auto& value : mData)
+	{
 		sum += value;
+	}
 	return sum;
 }
 
@@ -293,8 +305,8 @@ Matrix<T> Matrix<T>::Convolution2D(const Matrix<T>& kernel) const
 template<typename T>
 std::pair<Matrix<T>, Matrix<Size>> Matrix<T>::Neighbours(const typename Matrix<T>::Coordinate& index, const Size distance) const
 {
-	const int& row = static_cast<int>(index.first);
-	const int& column = static_cast<int>(index.second);
+	const int row = static_cast<int>(index.first);
+	const int column = static_cast<int>(index.second);
 
 	auto validate = [&](const int& value, const int& max) -> int
 	{

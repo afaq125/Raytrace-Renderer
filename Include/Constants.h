@@ -6,9 +6,9 @@ namespace Renderer
 
 	namespace Math
 	{
-		const float PI = 3.1427f;
-		const float Infinity = std::numeric_limits<float>::infinity();
-		const float NaN = std::numeric_limits<float>::quiet_NaN();
+		constexpr float PI = 3.1427f;
+		constexpr float Infinity = std::numeric_limits<float>::infinity();
+		constexpr float NaN = std::numeric_limits<float>::quiet_NaN();
 
 		template <typename T>
 		T Clamp(const T v, const T a, const T b)
@@ -17,9 +17,15 @@ namespace Renderer
 		}
 
 		template <typename T>
-		T mix(const T &a, const T &b, const T &mix)
+		T Mix(const T &a, const T &b, const T &mix)
 		{
 			return b * mix + a * (static_cast<T>(1) - mix);
+		}
+
+		template<typename T>
+		bool IsNearValue(const T a, const T b, const T tolerance = static_cast<T>(0.0001))
+		{
+			return std::abs(std::abs(a) - std::abs(b)) <= tolerance;
 		}
 	}
 }

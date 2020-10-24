@@ -149,7 +149,7 @@ int main()
 		giScene.Objects.push_back(plane1);
 
 		giScene.Lights.push_back(pointLight1);
-		//giScene.Lights.push_back(enviromentLight);
+		giScene.Lights.push_back(enviromentLight);
 	}
 
 	Scene pbrScene;
@@ -182,7 +182,6 @@ int main()
 			sphere->Material.Metalness = Clamp((1.0f / rows) * r, 0.0f, 1.0f);
 			sphere->Material.Roughness = Clamp((1.0f / columns) * c, 0.05f, 1.0f);
 			sphere->Material.Albedo[0] = sphere->Material.Metalness;
-			sphere->Material.IOR = 0.0f;
 			pbrScene.Objects.push_back(sphere);
 		}
 
@@ -236,26 +235,65 @@ int main()
 	{
 		const float width = 512.0f;
 		const float height = 512.0f;
-		const Vector3 target = { 0.0f, 3.0f, 0.0f };
-		auto camera = Camera(width, height, 1.5f, 0.01f);
-		camera.SetAspectRatio(16.0f, 9.0f);
-		camera.XForm.SetPosition({ 0.0f, 5.0f, 20.0f });
+		const Vector3 target = { -5.0f, 0.0f, -5.0f };
+		auto camera = Camera(width, height, 4.0f, 0.01f);
+		//camera.SetAspectRatio(16.0f, 9.0f);
+		camera.XForm.SetPosition({ -28.0f, 15.0f, -28.0f });
 		camera.LookAt(target, Y_MINUS_AXIS);
 
 		auto plane1 = std::make_shared<Plane>();
-		plane1->Width = 2000.0f;
-		plane1->Height = 2000.0f;
+		plane1->Width = 10.0f;
+		plane1->Height = 10.0f;
 		plane1->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
 		plane1->SetDirection({ 0.0f, 1.0f, 0.0f });
 		plane1->Material.Albedo = { 1.0f, 1.0f, 1.0f };
 		plane1->Material.Metalness = 0.0f;
 		plane1->Material.Roughness = 1.0f;
 
+		auto map = LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\Height_Map.png").Pixels[0];
+		map *= 8.0f;
+		map += 1.0f;
+		const float gWidth = 20.0f;
+		const float gHeight = 20.0f;
+		const auto rows = map.Rows();
+		const auto columns = map.Columns();
+		for (unsigned int c = 0; c < columns; ++c)
+		{
+			for (unsigned int r = 0; r < rows; ++r)
+			{
+				const float x = (static_cast<float>(c) * (gWidth / static_cast<float>(columns))) - gWidth;
+				const float y =  map.Get(c, r) / 2.0f;
+				const float z = (static_cast<float>(r) * (gHeight / static_cast<float>(rows))) - gHeight;
+
+				auto cube = std::make_shared<Cube>();
+				cube->Width = (gWidth / static_cast<float>(columns)) - 0.01f;
+				cube->Height = map.Get(c, r);
+				cube->Length = (gHeight / static_cast<float>(rows)) - 0.01f;
+				cube->XForm.SetPosition({ x, y, z });
+				cube->Material.Albedo = { 0.988235f, 0.980392f, 0.960784f };
+				cube->Material.Metalness = 1.0f;
+				cube->Material.Roughness = 0.6f;
+				cube->Material.ReflectionDepth = 0u;
+				cube->Material.ReflectionSamples = 0u;
+
+				blockCityScene.Objects.push_back(cube);
+			}
+		}
+
 		auto pointLight1 = std::make_shared<Lights::Point>();
-		pointLight1->Intensity = 18.0f;
-		pointLight1->Colour = { 0.9f, 0.9f, 0.9f };
+		pointLight1->Intensity = 28.0f;
+		pointLight1->Colour = { 0.9f, 0.1f, 0.1f };
 		pointLight1->ShadowIntensity = 1.0f;
-		pointLight1->XForm.SetPosition({ 10.0f, 10.0f, 10.0f });
+		pointLight1->XForm.SetPosition({ 20.0f, 20.0f, 20.0f });
+
+		auto areaLight1 = std::make_shared<Lights::Area>();
+		areaLight1->Intensity = 18.0f;
+		areaLight1->Colour = { 0.9f, 0.1f, 0.1f };
+		areaLight1->ShadowIntensity = 1.0f;
+		areaLight1->Grid->Width = 10.0f;
+		areaLight1->Grid->Height = 10.0f;
+		areaLight1->Grid->XForm.SetPosition({ 0.0f, 0.0f, -50.0f });
+		areaLight1->Grid->SetDirection({ 0.0f, 0.0f, 1.0f });
 
 		auto enviromentLight = std::make_shared<Lights::Enviroment>(
 			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Top.png")),
@@ -264,24 +302,24 @@ int main()
 			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Right.png")),
 			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Back.png")),
 			std::move(LoadImage("I:\\Development\\Raytrace-Renderer\\Assets\\EnviromentMaps\\Garage\\Front.png")));
-		enviromentLight->Intensity = 10.0f;
+		enviromentLight->Intensity = 2.0f;
 
 		blockCityScene.Cam = camera;
 
-		blockCityScene.Objects.push_back(plane1);
+		//blockCityScene.Objects.push_back(plane1);
 
 		blockCityScene.Lights.push_back(pointLight1);
 		blockCityScene.Lights.push_back(enviromentLight);
 	}
 
-	const auto RenderGIScene = RayTracer(giScene).Render(&SaveImage, "Render_Update.png");
-	SaveImage(RenderGIScene, "Render_GI.png");
+	//const auto RenderGIScene = RayTracer(giScene).Render(&SaveImage, "Render_Update.png");
+	//SaveImage(RenderGIScene, "Render_GI.png");
 
 	//const auto RenderPBRScene = RayTracer(pbrScene).Render(&SaveImage, "Render_Update.png");
 	//SaveImage(RenderPBRScene, "Render_PBR.png");
 
-	//const auto RenderBlockCityScene = RayTracer(blockCityScene).Render(&SaveImage, "Render_Update.png");
-	//SaveImage(RenderBlockCityScene, "Render_BlockCity.png");
+	const auto RenderBlockCityScene = RayTracer(blockCityScene).Render(&SaveImage, "Render_Update.png");
+	SaveImage(RenderBlockCityScene, "Render_BlockCity.png");
 
 	int input;
 	std::cin >> input;
