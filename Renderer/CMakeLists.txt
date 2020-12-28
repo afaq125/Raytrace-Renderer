@@ -41,12 +41,19 @@ SET(SOURCE_FILES
     ${SOURCE_DIR}/Source/Shader.cpp
     ${SOURCE_DIR}/Source/Singleton.cpp
     ${SOURCE_DIR}/Source/Utilities.cpp
-    ${SOURCE_DIR}/Source/Vector.cpp
-    ${SOURCE_DIR}/Source/Main.cpp)
+    ${SOURCE_DIR}/Source/Vector.cpp)
 
 SET(TEST_FILES
-    ${SOURCE_DIR}/Tests/TestVector.h
-    ${SOURCE_DIR}/Tests/TestVector.cpp)
+    ${SOURCE_DIR}/Tests/Tests.h
+    ${SOURCE_DIR}/Tests/Tests.cpp
+    ${SOURCE_DIR}/Tests/TestUtilities.h
+    ${SOURCE_DIR}/Tests/TestUtilities.cpp
+    ${SOURCE_DIR}/Tests/VectorTest.h
+    ${SOURCE_DIR}/Tests/VectorTest.cpp
+    ${SOURCE_DIR}/Tests/RendererTest.h
+    ${SOURCE_DIR}/Tests/RendererTest.cpp)
+
+SET(TARGET_NAME ${PROJECT_NAME})
 
 #
 # FreeImage
@@ -63,41 +70,21 @@ find_library(FREEIMAGE_LIBRARY
 include_directories(${FREEIMAGE_INCLUDE_DIR})
 
 #
-# Renderer executable
-#
-
-add_executable(RaytraceRenderer 
-    ${SOURCE_FILES})
-
-target_include_directories(RaytraceRenderer
-    PUBLIC
-    ${SOURCE_DIR}/Include)
-
-target_link_libraries(RaytraceRenderer 
-    PUBLIC 
-    ${FREEIMAGE_LIBRARY})
-
-target_precompile_headers(RaytraceRenderer
-    PUBLIC
-    ${SOURCE_DIR}/Include/Renderer.h)
-
-#
 # Renderer lib
 #
 
-add_library(RaytraceRenderer-Lib
+add_library(
+    ${TARGET_NAME}
     STATIC
     ${SOURCE_FILES})
 
-target_include_directories(RaytraceRenderer-Lib
+target_include_directories(
+    ${TARGET_NAME}
     PUBLIC
     ${SOURCE_DIR}/Include)
 
-target_link_libraries(RaytraceRenderer-Lib 
-    PUBLIC 
-    ${FREEIMAGE_LIBRARY})
-
-target_precompile_headers(RaytraceRenderer-Lib
+target_precompile_headers(
+    ${TARGET_NAME}
     PUBLIC
     ${SOURCE_DIR}/Include/Renderer.h)
 
@@ -105,15 +92,18 @@ target_precompile_headers(RaytraceRenderer-Lib
 # GoogleTest lib
 #
 
-add_library(GoogleTest
+add_library(
+    GoogleTest
     STATIC 
     ${GTEST_DIR}/src/gtest_main.cc ${GTEST_DIR}/src/gtest-all.cc)
 
-target_include_directories(GoogleTest 
+target_include_directories(
+    GoogleTest 
     PRIVATE 
     ${GTEST_DIR})
 
-target_include_directories(GoogleTest 
+target_include_directories(
+    GoogleTest 
     PUBLIC 
     ${GTEST_DIR}/include)
 
@@ -121,14 +111,18 @@ target_include_directories(GoogleTest
 # Test executable
 #
 
-add_executable(RaytraceRenderer-Test
-        ${TEST_FILES})
+add_executable(
+    Tests
+    ${TEST_FILES})
 
-target_include_directories(RaytraceRenderer-Test
+target_include_directories(
+    Tests
     PUBLIC
     ${SOURCE_DIR}/Include)
 
-target_link_libraries(RaytraceRenderer-Test
-    RaytraceRenderer-Lib 
+target_link_libraries(
+    Tests
+    ${TARGET_NAME}
+    ${FREEIMAGE_LIBRARY}
     GoogleTest)
 
