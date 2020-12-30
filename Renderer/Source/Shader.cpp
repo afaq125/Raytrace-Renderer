@@ -137,13 +137,13 @@ float Shader::Shadow(const Vector3& hit,
 	const std::vector<std::shared_ptr<Object>>& objects,
 	const std::vector<std::shared_ptr<Light>>& lights) const
 {
-	float shadow = 0.0f;
+	float shadow = static_cast<float>(lights.size());
 	for (const auto& light : lights)
 	{
-		shadow += light->Shadow(objects, hit);
+		shadow -= light->Shadow(objects, hit);
 	}
-	shadow *= (1.0f / static_cast<float>(lights.size()));
-	return shadow;
+	const float fraction = (1.0f / static_cast<float>(lights.size()));
+	return (shadow * fraction);
 }
 
 Vector3 Shader::SceneReflections(

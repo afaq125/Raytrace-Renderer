@@ -14,7 +14,7 @@ float Point::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const V
 {
 	const auto ray = Ray(hit, XForm.GetPosition() - hit);
 	const bool shadow = !IntersectScene(objects, ray, false).empty();
-	return shadow ? 1.0f - ShadowIntensity : 1.0f;
+	return shadow ? ShadowIntensity : 0.0f;
 }
 
 Sample Point::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const
@@ -47,8 +47,8 @@ float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Ve
 			}
 		}
 	}
-	shadow = 1.0f - (shadow / std::pow(static_cast<float>(samples), 2.0f));
-	shadow *= 1.0f - ShadowIntensity;
+	shadow = (shadow / std::pow(static_cast<float>(samples), 2.0f));
+	shadow *= ShadowIntensity;
 	return shadow;
 }
 
@@ -68,7 +68,7 @@ Vector3 Area::SamplePlane(const float u, const float v, const Size uRegion, cons
 
 float Enviroment::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
 {
-	return 1.0f;
+	return 0.0f;
 }
 
 Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const
