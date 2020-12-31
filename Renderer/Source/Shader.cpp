@@ -47,6 +47,10 @@ Vector3 Shader::BRDF(
 	const auto F0 = Vector3::Mix(Vector3(0.04f), Albedo, Metalness);
 
 	const float shadow = Shadow(hit, objects, lights);
+	if (shadow < 0.0001f)
+	{
+		return { 0.0f, 0.0f, 0.0f };
+	}
 	
 	constexpr auto pdf = 1.0f / (2.0f * PI);
 	Vector3 ambient = Albedo * Vector3(0.03f);

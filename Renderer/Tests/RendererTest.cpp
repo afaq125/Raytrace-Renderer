@@ -3,103 +3,83 @@
 using namespace Renderer;
 using namespace Renderer::Math;
 
-TEST_F(RendererUnitTests, GlobalIlluminationTest)
+TEST_F(RendererUnitTests, AreaLightTest)
 {
-	Scene scene;
-
-	std::vector<Vector3> planePositions = {
-		{ 5.0f, 0.0f, 0.0f },
-		{ 0.0f, 5.0f, 0.0f },
-		{ -5.0f, 0.0f, 0.0f },
-		{ 0.0f, -5.0f, 0.0f }
-	};
-
-	std::vector<Vector3> planeDirections = {
-		{ -1.0f, 0.0f, 0.0f },
-		{ 0.0f, -1.0f, 0.0f },
-		{ 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f }
-	};
-
-	std::vector<Vector3> colours = {
-		{ 68.0f, 75.0f, 91.0f },
-		{ 205.0f, 90.0f, 87.0f },
-		{ 120.0f, 164.0f, 163.0f },
-		{ 225.0f, 177.0f, 105.0f },
-		{ 225.0f, 177.0f, 105.0f },
-		{ 170.0f, 170.0f, 170.0f }
-	};
-
-	for (auto& colour : colours)
+	std::vector<std::shared_ptr<Object>> objects;
 	{
-		colour = colour / 255.0f;
-		colour = colour * 1.25f;
-	}
+		const std::vector<Vector3> colours = {
+			{ 68.0f, 75.0f, 91.0f },
+			{ 205.0f, 90.0f, 87.0f },
+			{ 120.0f, 164.0f, 163.0f },
+			{ 225.0f, 177.0f, 105.0f },
+			{ 225.0f, 177.0f, 105.0f },
+			{ 170.0f, 170.0f, 170.0f }
+		};
 
-	for (Size i = 0; i < planePositions.size(); ++i)
-	{
-		auto plane = std::make_shared<Plane>();
-		plane->Width = 10.0f;
-		plane->Height = 10.0f;
-		plane->XForm.SetPosition(planePositions[i]);
-		plane->SetDirection(planeDirections[i]);
-		plane->Material.Albedo = { 1.0f, 1.0f, 1.0f };
-		plane->Material.Metalness = 0.0f;
-		plane->Material.Roughness = 1.0f;
-		plane->Material.ReflectionSamples = 0u;
-		plane->Material.ReflectionDepth = 0u;
-		scene.Objects.push_back(plane);
-	}
+		objects.emplace_back(std::make_shared<Plane>(Plane(10.0f, 10.0f, { 5.0f, 0.0f, 0.0f },  { -1.0f, 0.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(10.0f, 10.0f, { 0.0f, 5.0f, 0.0f },  { 0.0f, -1.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(10.0f, 10.0f, { -5.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(10.0f, 10.0f, { 0.0f, -5.0f, 0.0f }, { 0.0f, 1.0f, 0.0f })));
 
-	constexpr Size count = 10;
-	for (Size i = 0; i < planePositions.size(); ++i)
-	{
-		auto plane = std::static_pointer_cast<Plane>(scene.Objects[i]);
-		for (Size j = 0; j < count; ++j)
+		for (auto& object : objects)
 		{
-			const int randomIndex = static_cast<int>(Random() * static_cast<float>(colours.size()));
-			const auto position = plane->UVToWorld(Random(), Random());
-			const float radius = Random() * 2.0f;
-			const Vector3 colour = colours[randomIndex];
+			auto plane = std::static_pointer_cast<Plane>(object);
+			plane->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+			plane->Material.Metalness = 0.0f;
+			plane->Material.Roughness = 1.0f;
+			plane->Material.ReflectionSamples = 0u;
+			plane->Material.ReflectionDepth = 0u;
+		}
 
-			auto sphere = std::make_shared<Sphere>();
-			sphere->Radius = radius;
-			sphere->XForm.SetPosition(position);
-			sphere->Material.Albedo = colour;
-			sphere->Material.Metalness = 1.0f;
-			sphere->Material.Roughness = 0.5f;
-			scene.Objects.push_back(sphere);
+		constexpr Size count = 10;
+		for (Size i = 0; i < 4; ++i)
+		{
+			auto plane = std::static_pointer_cast<Plane>(objects[i]);
+
+			for (Size j = 0; j < count; ++j)
+			{
+				const int randomIndex = static_cast<int>(Random() * static_cast<float>(colours.size()));
+				const auto position = plane->UVToWorld(Random(), Random());
+				const float radius = Random() * 2.0f;
+				const Vector3 colour = (colours[randomIndex] / 255.0f) * 1.25f;
+
+				auto sphere = std::make_shared<Sphere>();
+				sphere->Radius = radius;
+				sphere->XForm.SetPosition(position);
+				sphere->Material.Albedo = colour;
+				sphere->Material.Metalness = 1.0f;
+				sphere->Material.Roughness = 0.5f;
+				
+				objects.push_back(sphere);
+			}
+		}
+
+		for (Size i = 0; i < 4; ++i)
+		{
+			auto plane = std::static_pointer_cast<Plane>(objects[i]);
+			plane->Width = 20.0f;
+			plane->Height = 20.0f;
 		}
 	}
 
-	for (Size i = 0; i < planePositions.size(); ++i)
+	std::vector<std::shared_ptr<Light>> lights;
 	{
-		auto plane = std::static_pointer_cast<Plane>(scene.Objects[i]);
-		plane->Width = 20.0f;
-		plane->Height = 20.0f;
+		auto aLight = std::make_shared<Lights::Area>();
+		aLight->Intensity = 28.0f;
+		aLight->Samples = 32;
+		aLight->Colour = { 1.0f, 1.0f, 1.0f };
+		aLight->ShadowIntensity = 0.5f;
+		aLight->Grid->Width = 10.0f;
+		aLight->Grid->Height = 10.0f;
+		aLight->Grid->XForm.SetPosition({ 0.0f, 0.0f, -9.9f });
+		aLight->Grid->SetDirection({ 0.0f, 0.0f, 1.0f });
+
+		lights.push_back(aLight);
 	}
 
-	auto areaLight1 = std::make_shared<Lights::Area>();
-	//areaLight1->RenderGeometry = true;
-	areaLight1->Intensity = 28.0f;
-	areaLight1->Samples = 32;
-	areaLight1->Colour = { 1.0f, 1.0f, 1.0f };
-	areaLight1->ShadowIntensity = 0.5f;
-	areaLight1->Grid->Width = 10.0f;
-	areaLight1->Grid->Height = 10.0f;
-	areaLight1->Grid->XForm.SetPosition({ 0.0f, 0.0f, -9.9f });
-	areaLight1->Grid->SetDirection({ 0.0f, 0.0f, 1.0f });
-
-	const float width = 1024.0f;
-	const float height = 1024.0f;
-	const Vector3 target = { 0.0f, 0.0f, 0.0f };
-	auto camera = Camera(width, height, 1.5f, 0.005f);
+	auto camera = Camera(1024.0f, 1024.0f, 1.5f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, 0.0f, 9.0f });
-	camera.LookAt(target, Y_MINUS_AXIS);
-
-	scene.Cam = camera;
-
-	scene.Lights.push_back(areaLight1);
+	camera.LookAt({ 0.0f, 0.0f, 0.0f }, Y_MINUS_AXIS);
 
 	RayTracer::Settings settings;
 	settings.SamplesPerPixel = 20u;
@@ -107,8 +87,80 @@ TEST_F(RendererUnitTests, GlobalIlluminationTest)
 	settings.MaxGIDepth = 1u;
 	settings.SecondryBounces = 10u;
 
-	scene.Initialise();
-	const auto RenderGIScene = RayTracer(scene, settings).Render(&SaveImage, "Render_Update.png");
+	const auto RenderGIScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
+	SaveImage(RenderGIScene, "Render_AreaLight.png");
+}
+
+TEST_F(RendererUnitTests, GlobalIlluminationTest)
+{
+	std::vector<std::shared_ptr<Object>> objects;
+	{
+		const auto WH = 10.0f;
+		const auto halfWH = WH / 2.0f;
+
+		// Outter walls
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH, WH, { 0.0f, halfWH, 0.0f }, { 0.0f, -1.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH, WH, { 0.0f, -halfWH, 0.0f }, { 0.0f, 1.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH, WH, { halfWH, 0.0f, 0.0f }, { -1.0f, 0.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH, WH, { -halfWH, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH, WH, { 0.0f, 0.0f, -halfWH }, { 0.0f, 0.0f, 1.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH, WH, { 0.0f, 0.0f, halfWH }, { 0.0f, 0.0f, -1.0f })));
+
+		// Interior walls
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH + 0.1f, WH + 0.1f, { 0.0f, 1.0f, -0.25f }, { 0.0f, 0.0f, -1.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH + 0.1f, WH + 0.1f, { 0.0f, 1.0f, 0.25f }, { 0.0f, 0.0f, 1.0f })));
+		objects.emplace_back(std::make_shared<Plane>(Plane(WH + 0.1f, 0.5f, { 0.0f, -4.0f, 0.0f }, { 0.0f, -1.0f, 0.0f })));
+
+		for (auto& object : objects)
+		{
+			auto plane = std::static_pointer_cast<Plane>(object);
+			plane->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+			plane->Material.Metalness = 0.0f;
+			plane->Material.Roughness = 1.0f;
+			plane->Material.ReflectionSamples = 0u;
+			plane->Material.ReflectionDepth = 0u;
+		}
+
+		const std::vector<Vector3> colours = {
+			{ 1.0f, 0.0f, 0.0f },
+			{ 0.0f, 1.0f, 0.0f },
+			{ 0.0f, 0.0f, 1.0f },
+		};
+
+		for (Size i = 0; i < 3; ++i)
+		{
+			auto cube = std::make_shared<Cube>();
+			cube->XForm.SetPosition({ -2.0f + static_cast<float>(i * 2), -4.5f, 1.5f });
+			cube->Material.Albedo = colours[i];
+			cube->Material.Metalness = 1.0f;
+			cube->Material.Roughness = 0.1f;
+
+			objects.push_back(cube);
+		}
+	}
+
+	std::vector<std::shared_ptr<Light>> lights;
+	{
+		auto pLight = std::make_shared<Lights::Point>();
+		pLight->XForm.SetPosition({ 0.0f, -2.25f, -4.5f });
+		pLight->Intensity = 10.0f;
+		pLight->Colour = { 0.9f, 0.9f, 0.9f };
+		pLight->ShadowIntensity = 1.0f;
+
+		lights.push_back(pLight);
+	}
+
+	auto camera = Camera(1024.0f, 1024.0f, 1.0f, 0.005f);
+	camera.XForm.SetPosition({ 0.0f, -2.5f, 4.5f });
+	camera.LookAt({ 0.0f, -2.5f, 0.0f }, Y_MINUS_AXIS);
+
+	RayTracer::Settings settings;
+	settings.SamplesPerPixel = 20u;
+	settings.MaxDepth = 3u;
+	settings.MaxGIDepth = 2u;
+	settings.SecondryBounces = 15u;
+
+	const auto RenderGIScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderGIScene, "Render_GI.png");
 }
 
@@ -152,7 +204,6 @@ TEST_F(RendererUnitTests, PBRTest)
 
 		objects.push_back(plane);
 	}
-
 
 	std::vector<std::shared_ptr<Light>> lights;
 	{
@@ -241,7 +292,6 @@ TEST_F(RendererUnitTests, SpheresTest)
 
 		return spheres;
 	};
-
 	const auto WriteFile = [](const std::string& path, const Sphere& sphere) -> bool
 	{
 		std::ofstream file(path, std::ios::app);
@@ -263,7 +313,6 @@ TEST_F(RendererUnitTests, SpheresTest)
 		}
 		return false;
 	};
-
 	const auto CreateSpheres = []() -> std::vector<std::shared_ptr<Object>>
 	{
 		Size i = 0;
@@ -279,12 +328,6 @@ TEST_F(RendererUnitTests, SpheresTest)
 			{ 225.0f, 177.0f, 105.0f },
 			{ 170.0f, 170.0f, 170.0f }
 		};
-
-		for (auto& colour : colours)
-		{
-			colour = colour / 255.0f;
-			colour = colour * 1.25f;
-		}
 
 		while(spheres.size() < count || i < limit)
 		{
@@ -319,12 +362,12 @@ TEST_F(RendererUnitTests, SpheresTest)
 				continue;
 			}
 
-			int randomIndex = static_cast<int>(Random() * static_cast<float>(colours.size()));
+			const int randomIndex = static_cast<int>(Random() * static_cast<float>(colours.size()));
 
 			auto sphere = std::make_shared<Sphere>();
 			sphere->Radius = radius;
 			sphere->XForm.SetPosition(position);
-			sphere->Material.Albedo = colours[randomIndex];
+			sphere->Material.Albedo = (colours[randomIndex] / 255.0f) * 1.25f;
 			sphere->Material.Metalness = i % 2 ? 1.0f : 0.0f;
 			sphere->Material.Roughness = 0.05f;
 			sphere->Material.ReflectionDepth = 4u;
@@ -347,37 +390,38 @@ TEST_F(RendererUnitTests, SpheresTest)
 		return spheres;
 	};
 
-	const std::string file = "./spheres.txt";
-	scene.Objects = ReadFile(file);
-	if (scene.Objects.empty()) 
+	std::vector<std::shared_ptr<Object>> objects;
 	{
-		scene.Objects = CreateSpheres();
-
-		for (const auto object : scene.Objects)
+		const std::string file = "./spheres.txt";
+		objects = ReadFile(file);
+		if (objects.empty())
 		{
-			const auto sphere = std::static_pointer_cast<Sphere>(object);
-			WriteFile(file, *sphere.get());
+			objects = CreateSpheres();
+			for (const auto object : scene.Objects)
+			{
+				const auto sphere = std::static_pointer_cast<Sphere>(object);
+				WriteFile(file, *sphere.get());
+			}
 		}
 	}
 
-	auto enviromentLight = std::make_shared<Lights::Enviroment>(
-		std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Top.png")),
-		std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Bottom.png")),
-		std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Left.png")),
-		std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Right.png")),
-		std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Back.png")),
-		std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Front.png")));
-	enviromentLight->Intensity = 10.0f;
+	std::vector<std::shared_ptr<Light>> lights;
+	{
+		auto evLight = std::make_shared<Lights::Enviroment>(
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Top.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Bottom.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Left.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Right.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Back.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Front.png")));
+		evLight->Intensity = 10.0f;
 	
-	scene.Lights.push_back(enviromentLight);
+		lights.push_back(evLight);
+	}
 
-	const float width = 1024.0f;
-	const float height = 1024.0f;
-	const Vector3 target = { 0.0f, 0.0f, 0.0f };
-	auto camera = Camera(width, height, 1.5f, 0.005f);
+	auto camera = Camera(1024.0f, 1024.0f, 1.5f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, 15.0f, 0.0f });
-	camera.LookAt(target, Z_MINUS_AXIS);
-	scene.Cam = camera;
+	camera.LookAt({ 0.0f, 0.0f, 0.0f }, Z_MINUS_AXIS);
 
 	RayTracer::Settings settings;
 	settings.SamplesPerPixel = 40u;
@@ -385,6 +429,6 @@ TEST_F(RendererUnitTests, SpheresTest)
 	settings.MaxGIDepth = 1u;
 	settings.SecondryBounces = 4u;
 
-	const auto RenderPBRScene = RayTracer(scene, settings).Render(&SaveImage, "Render_Update.png");
+	const auto RenderPBRScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderPBRScene, "Render_Spheres.png");
 }

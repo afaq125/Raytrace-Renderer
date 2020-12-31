@@ -12,8 +12,18 @@ Vector3 Light::Attenuation(const Vector3& colour, const float intensity, const f
 
 float Point::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Vector3& hit) const
 {
-	const auto ray = Ray(hit, XForm.GetPosition() - hit);
-	const bool shadow = !IntersectScene(objects, ray, false).empty();
+	bool shadow = false;
+	const auto direction = XForm.GetPosition() - hit;
+	const auto ray = Ray(hit, direction);
+	const auto intersections = IntersectScene(objects, ray, true);
+	if (!intersections.empty())
+	{
+		const auto difference = direction.Length() - (intersections.front().Position - hit).Length();
+		if (difference > 0.0f)
+		{
+			shadow = true;
+		}
+	}
 	return shadow ? ShadowIntensity : 0.0f;
 }
 
@@ -40,10 +50,17 @@ float Area::Shadow(const std::vector<std::shared_ptr<Object>>& objects, const Ve
 			const float random1 = Random();
 			const float random2 = Random();
 			const auto position = SamplePlane(random1, random2, u, v, offset);
-			const auto direction = (position - hit).Normalized();
-			if (!IntersectScene(objects, Ray(hit, direction), false).empty())
+			const auto direction = position - hit;
+			const auto ray = Ray(hit, direction);
+
+			const auto intersections = IntersectScene(objects, ray, true);
+			if (!intersections.empty())
 			{
-				shadow += 1.0f;
+				const auto difference = direction.Length() - (intersections.front().Position - hit).Length();
+				if (difference > 0.0f)
+				{
+					shadow += 1.0f;
+				}
 			}
 		}
 	}

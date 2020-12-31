@@ -88,7 +88,7 @@ Intersection RayTracer::Trace(const Ray& ray, const Size depth) const
 		indirect = GlobalIllumination(ray, normal, hit, depth);                                                   
 	}
 
-	const auto irradiance = (direct / ((indirect * 2.0f) + PI)) * object->Material.Albedo;
+	const auto irradiance = ((direct / PI) + (indirect * 2.0f)) * object->Material.Albedo;
 
 	intersection.SurfaceColour = irradiance;
 	return intersection;
