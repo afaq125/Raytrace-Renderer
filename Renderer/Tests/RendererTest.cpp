@@ -432,3 +432,85 @@ TEST_F(RendererUnitTests, SpheresTest)
 	const auto RenderPBRScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderPBRScene, "Render_Spheres.png");
 }
+
+TEST_F(RendererUnitTests, CubesTest)
+{
+	std::vector<std::shared_ptr<Object>> objects;
+	{
+		auto plane = std::make_shared<Plane>();
+		plane->Width = 10.0f;
+		plane->Height = 10.0f;
+		plane->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
+		plane->SetDirection({ 0.0f, 1.0f, 0.0f });
+		plane->Material.Albedo = { 1.0f, 1.0f, 1.0f };
+		plane->Material.Metalness = 0.0f;
+		plane->Material.Roughness = 1.0f;
+		plane->Material.ReflectionSamples = 0u;
+		plane->Material.ReflectionDepth = 0u;
+
+		objects.push_back(plane);
+
+		const auto map = (LoadImage("..\\..\\Assets\\Height_Map.png").Pixels[0] * 8.0f) + 1.0f;
+		const float gWidth = 20.0f;
+		const float gHeight = 20.0f;
+		const auto rows = map.Rows();
+		const auto columns = map.Columns();
+		for (unsigned int c = 0; c < columns; ++c)
+		{
+			for (unsigned int r = 0; r < rows; ++r)
+			{
+				const float x = (static_cast<float>(c) * (gWidth / static_cast<float>(columns))) - gWidth;
+				const float y = map.Get(c, r) / 2.0f;
+				const float z = (static_cast<float>(r) * (gHeight / static_cast<float>(rows))) - gHeight;
+
+				auto cube = std::make_shared<Cube>();
+				cube->Width = (gWidth / static_cast<float>(columns)) - 0.01f;
+				cube->Height = map.Get(c, r);
+				cube->Length = (gHeight / static_cast<float>(rows)) - 0.01f;
+				cube->XForm.SetPosition({ x, y, z });
+				cube->Material.Albedo = { 0.988235f, 0.980392f, 0.960784f };
+				cube->Material.Metalness = 1.0f;
+				cube->Material.Roughness = 0.6f;
+				//cube->Material.ReflectionDepth = 0u;
+				//cube->Material.ReflectionSamples = 0u;
+
+				objects.push_back(cube);
+			}
+		}
+	}
+
+	std::vector<std::shared_ptr<Light>> lights;
+	{
+		auto pLight = std::make_shared<Lights::Point>();
+		pLight->Intensity = 28.0f;
+		pLight->Colour = { 0.9f, 0.1f, 0.1f };
+		pLight->ShadowIntensity = 1.0f;
+		pLight->XForm.SetPosition({ 20.0f, 20.0f, 20.0f });
+
+		lights.push_back(pLight);
+
+		auto evLight = std::make_shared<Lights::Enviroment>(
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Top.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Bottom.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Left.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Right.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Back.png")),
+			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Front.png")));
+		evLight->Intensity = 2.0f;
+
+		lights.push_back(evLight);
+	}
+
+	auto camera = Camera(512.0f, 512.0f, 4.0f, 0.01f);
+	camera.XForm.SetPosition({ -28.0f, 15.0f, -28.0f });
+	camera.LookAt({ -5.0f, 0.0f, -5.0f }, Y_MINUS_AXIS);
+
+	RayTracer::Settings settings;
+	settings.SamplesPerPixel = 10u;
+	settings.MaxDepth = 1u;
+	settings.MaxGIDepth = 1u;
+	settings.SecondryBounces = 4u;
+
+	const auto RenderBlockCityScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
+	SaveImage(RenderBlockCityScene, "Render_Cubes.png");
+}
