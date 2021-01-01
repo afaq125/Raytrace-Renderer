@@ -39,6 +39,7 @@ namespace Renderer
 			Vector(const Vector &rhs) = default;
 			Vector(Vector &&rhs) = default;
 			Vector<T, SIZE>& operator=(const Vector<T, SIZE>& vector) = default;
+			Vector<T, SIZE>& operator=(Vector<T, SIZE>&& vector) = default;
 
 			// Accessors
 			T& operator[] (Size i) { return mData[i]; }

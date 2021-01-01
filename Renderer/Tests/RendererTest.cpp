@@ -83,9 +83,9 @@ TEST_F(RendererUnitTests, AreaLightTest)
 
 	RayTracer::Settings settings;
 	settings.SamplesPerPixel = 20u;
-	settings.MaxDepth = 2u;
-	settings.MaxGIDepth = 1u;
-	settings.SecondryBounces = 10u;
+	settings.MaxDepth = 1u;
+	settings.MaxGIDepth = 0u;
+	settings.SecondryBounces = 0u;
 
 	const auto RenderGIScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderGIScene, "Render_AreaLight.png");
@@ -143,7 +143,7 @@ TEST_F(RendererUnitTests, GlobalIlluminationTest)
 	{
 		auto pLight = std::make_shared<Lights::Point>();
 		pLight->XForm.SetPosition({ 0.0f, -2.25f, -4.5f });
-		pLight->Intensity = 10.0f;
+		pLight->Intensity = 6.0f;
 		pLight->Colour = { 0.9f, 0.9f, 0.9f };
 		pLight->ShadowIntensity = 1.0f;
 
@@ -426,8 +426,8 @@ TEST_F(RendererUnitTests, SpheresTest)
 	RayTracer::Settings settings;
 	settings.SamplesPerPixel = 40u;
 	settings.MaxDepth = 1u;
-	settings.MaxGIDepth = 1u;
-	settings.SecondryBounces = 4u;
+	settings.MaxGIDepth = 0u;
+	settings.SecondryBounces = 0u;
 
 	const auto RenderPBRScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderPBRScene, "Render_Spheres.png");
@@ -438,8 +438,8 @@ TEST_F(RendererUnitTests, CubesTest)
 	std::vector<std::shared_ptr<Object>> objects;
 	{
 		auto plane = std::make_shared<Plane>();
-		plane->Width = 10.0f;
-		plane->Height = 10.0f;
+		plane->Width = 1000.0f;
+		plane->Height = 1000.0f;
 		plane->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
 		plane->SetDirection({ 0.0f, 1.0f, 0.0f });
 		plane->Material.Albedo = { 1.0f, 1.0f, 1.0f };
@@ -450,7 +450,7 @@ TEST_F(RendererUnitTests, CubesTest)
 
 		objects.push_back(plane);
 
-		const auto map = (LoadImage("..\\..\\Assets\\Height_Map.png").Pixels[0] * 8.0f) + 1.0f;
+		const auto map = (LoadImage("..\\..\\Assets\\Height_Map_128.png").Pixels[0] * 1.0f) + 1.0f;
 		const float gWidth = 20.0f;
 		const float gHeight = 20.0f;
 		const auto rows = map.Rows();
@@ -470,9 +470,7 @@ TEST_F(RendererUnitTests, CubesTest)
 				cube->XForm.SetPosition({ x, y, z });
 				cube->Material.Albedo = { 0.988235f, 0.980392f, 0.960784f };
 				cube->Material.Metalness = 1.0f;
-				cube->Material.Roughness = 0.6f;
-				//cube->Material.ReflectionDepth = 0u;
-				//cube->Material.ReflectionSamples = 0u;
+				cube->Material.Roughness = 0.1f;
 
 				objects.push_back(cube);
 			}
@@ -496,7 +494,7 @@ TEST_F(RendererUnitTests, CubesTest)
 			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Right.png")),
 			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Back.png")),
 			std::move(LoadImage("..\\..\\Assets\\EnviromentMaps\\Sky\\Front.png")));
-		evLight->Intensity = 2.0f;
+		evLight->Intensity = 6.0f;
 
 		lights.push_back(evLight);
 	}
@@ -508,8 +506,8 @@ TEST_F(RendererUnitTests, CubesTest)
 	RayTracer::Settings settings;
 	settings.SamplesPerPixel = 10u;
 	settings.MaxDepth = 1u;
-	settings.MaxGIDepth = 1u;
-	settings.SecondryBounces = 4u;
+	settings.MaxGIDepth = 0u;
+	settings.SecondryBounces = 0u;
 
 	const auto RenderBlockCityScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderBlockCityScene, "Render_Cubes.png");

@@ -38,6 +38,7 @@ namespace Renderer
 			Matrix(const Matrix &rhs) = default;
 			Matrix(Matrix &&rhs) = default;
 			Matrix<T>& operator=(const Matrix<T>& rhs) = default;
+			Matrix<T>& operator=(Matrix<T>&& rhs) = default;
 			~Matrix() {}
 
 			// Matrix functions

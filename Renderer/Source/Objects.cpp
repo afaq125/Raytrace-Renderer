@@ -182,7 +182,7 @@ Vector3 Cube::CalculateNormal(const Vector3& hit) const
 		normal = { 1.0f, 0.0f, 0.0f };
 		if (local[0] < 0.0f)
 		{
-			normal = { 1.0f, 0.0f, 0.0f };
+			normal = { -1.0f, 0.0f, 0.0f };
 		}
 		return normal;
 	}
@@ -197,10 +197,10 @@ Vector3 Cube::CalculateNormal(const Vector3& hit) const
 		return normal;
 	}
 
-	if (IsNearValue(local[1], Length / 2.0f))
+	if (IsNearValue(local[2], Length / 2.0f))
 	{
 		normal = { 0.0f, 0.0f, 1.0f };
-		if (local[1] < 0.0f)
+		if (local[2] < 0.0f)
 		{
 			normal = { 0.0f, 0.0f, -1.0f };
 		}
