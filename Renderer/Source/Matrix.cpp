@@ -7,48 +7,48 @@ using namespace Renderer::Math;
 
 template<typename T>
 Matrix<T>::Matrix() :
-	mRows(0),
-	mColumns(0)
+	m_rows(0),
+	m_columns(0)
 {
 }
 
 template<typename T>
 Matrix<T>::Matrix(const Size rows, const Size columns) :
-	mRows(rows),
-	mColumns(columns)
+	m_rows(rows),
+	m_columns(columns)
 {
-	mData.resize(rows * columns);
+	m_data.resize(rows * columns);
 }
 
 template<typename T>
 Matrix<T>::Matrix(const T value, const Size rows, const Size columns) :
 	Matrix<T>::Matrix(rows, columns)
 {
-	std::fill(mData.begin(), mData.end(), value);
+	std::fill(m_data.begin(), m_data.end(), value);
 }
 
 template<typename T>
-Matrix<T>::Matrix(std::vector<T>&& data, const Size rows, const Size columns) :
-	mRows(rows),
-	mColumns(columns)
+Matrix<T>::Matrix(std::vector<T> data, const Size rows, const Size columns) :
+	m_rows(rows),
+	m_columns(columns)
 {
 	if (Area() != data.size())
 	{
 		throw std::logic_error("Row and Columns area does not match data size.");
 	}
-	mData = std::move(data);
+	m_data = std::move(data);
 }
 
 template<typename T>
 Matrix<T>::Matrix(const std::initializer_list<std::initializer_list<T>>& mat)
 {
-	mRows = mat.size();
-	mColumns = (*mat.begin()).size();
+	m_rows = mat.size();
+	m_columns = (*mat.begin()).size();
 	for (const auto& r : mat)
 	{
 		for (const auto& c : r)
 		{
-			mData.push_back(c);
+			m_data.push_back(c);
 		}
 	}
 }
@@ -63,11 +63,11 @@ void Matrix<T>::Identity()
 		return;
 	}
 
-	std::fill(mData.begin(), mData.end(), static_cast<T>(0));
+	std::fill(m_data.begin(), m_data.end(), static_cast<T>(0));
 	Size offset = 0;
 	for (Size i = 0; i < Area(); i += Rows())
 	{
-		mData[offset + i] = 1;
+		m_data[offset + i] = 1;
 		++offset;
 	}
 }
@@ -82,11 +82,11 @@ void Matrix<T>::Transpose()
 		{
 			const Size index = Columns() * r + c;
 			const Size tIndex = (Rows() * c) + r;
-			transposed[index] = mData[tIndex];
+			transposed[index] = m_data[tIndex];
 		}
 	}
-	mData = transposed;
-	std::swap(mRows, mColumns);
+	m_data = transposed;
+	std::swap(m_rows, m_columns);
 }
 
 template<typename T>
@@ -111,7 +111,7 @@ void Matrix<T>::Cofactor()
 {
 	for (Size i = 0; i < Area(); ++i)
 	{
-		mData[i] = i % 2 ? mData[i] * static_cast<T>(-1) : mData[i];
+		m_data[i] = i % 2 ? m_data[i] * static_cast<T>(-1) : m_data[i];
 	}
 }
 
@@ -136,7 +136,7 @@ T Matrix<T>::Determinant() const
 	{
 		Matrix<T> expanded(0,0);
 		Laplace(*this, i, 4, expanded);
-		determinants[i] = mData[i] * ((expanded[0] * expanded[3]) - (expanded[1] * expanded[2]));
+		determinants[i] = m_data[i] * ((expanded[0] * expanded[3]) - (expanded[1] * expanded[2]));
 	}
 
 	Size i = 0;
@@ -153,14 +153,14 @@ T Matrix<T>::Determinant() const
 template<typename T>
 void Matrix<T>::Inverse()
 {
-	const T determinant = Determinant();
-	Transpose();
-	mData = Minors().Data();
-	Cofactor();
+	//const T determinant = Determinant();
+	//Transpose();
+	//m_data = Minors().Data();
+	//Cofactor();
 
-	// Determinant can can be calculated faster by reusing minors.
-	T value = static_cast<T>(1) / determinant;
-	std::for_each(mData.begin(), mData.end(), [&](auto &i) { i *= value; });
+	//T value = static_cast<T>(1) / determinant;
+	//std::for_each(m_data.begin(), m_data.end(), [&](auto &i) { i *= value; });
+	*this = GaussElimination();
 }
 
 template<typename T>
@@ -213,12 +213,72 @@ void Matrix<T>::Laplace(
 }
 
 template<typename T>
+Matrix<T> Matrix<T>::GaussElimination(const Matrix<T>& solution) const
+{
+	if (!IsSqaure())
+	{
+		throw std::logic_error("Matrix is not square.");
+	}
+
+	auto coefficient = *this;
+	auto result = solution;
+
+	if (result.Area() != Area())
+	{
+		result = coefficient;
+		result.Identity();
+	}
+
+	const Size size = coefficient.Columns();
+	std::vector<T> pivot_row(size);
+	std::vector<T> result_pivot_row(size);
+
+	for (Size i = 0; i < size; ++i)
+	{
+		const T pivot = coefficient[(size * i) + i] + static_cast<T>(0.000001);
+		for (Size c = 0; c < size; ++c)
+		{
+			const Size offset = (size * i) + c;
+			pivot_row[c] = coefficient[offset] / pivot;
+			result_pivot_row[c] = result[offset] / pivot;
+		}
+
+		for (Size r = 0; r < size; ++r)
+		{
+			if (r == i)
+			{
+				continue;
+			}
+
+			const Size offset = (size * r) + i;
+			const T first = coefficient[offset];
+
+			for (Size c = 0; c < size; ++c)
+			{
+				const Size index = size * r + c;
+				coefficient[index] = coefficient[index] - (first * pivot_row[c]);
+				result[index] = result[index] - (first * result_pivot_row[c]);
+			}
+		}
+
+		for (Size c = 0; c < size; ++c)
+		{
+			const Size offset = (size * i) + c;
+			coefficient[offset] = pivot_row[c];
+			result[offset] = result_pivot_row[c];
+		}
+	}
+
+	return result;
+}
+
+template<typename T>
 T Matrix<T>::Product(const Matrix<T>& matrix) const
 {
 	T sum = static_cast<T>(0);
 	for (Size i = 0; i < Area(); ++i)
 	{
-		sum += mData[i] * matrix[i];
+		sum += m_data[i] * matrix[i];
 	}
 	return sum;
 }
@@ -227,7 +287,7 @@ template<typename T>
 T Matrix<T>::Sum() const
 {
 	T sum = static_cast<T>(0);
-	for (const auto& value : mData)
+	for (const auto& value : m_data)
 	{
 		sum += value;
 	}
@@ -251,7 +311,7 @@ Matrix<T> Matrix<T>::Normalized() const
 template<typename T>
 Matrix<T> Matrix<T>::Multiply(const Matrix<T>& matrix) const
 {
-	if (Columns() != matrix.Rows() )
+	if (Columns() != matrix.Rows())
 	{
 		throw std::logic_error("Diemnsions do not match for matrix multiplication. This matrix rows must match input columns.");
 	}
@@ -268,7 +328,7 @@ Matrix<T> Matrix<T>::Multiply(const Matrix<T>& matrix) const
 			{
 				Size thisOffset = Columns() * r + i;
 				Size otherOffset = matrix.Rows() * c + i;
-				sum += mData[thisOffset] * matrix[otherOffset];
+				sum += m_data[thisOffset] * matrix[otherOffset];
 			}
 
 			result[index] = sum;
@@ -339,7 +399,7 @@ std::pair<Matrix<T>, Matrix<Size>> Matrix<T>::Neighbours(const typename Matrix<T
 		for (Size c = 0; c < columns; ++c)
 		{
 			const Size index = columns * r + c;
-			neighboursV[offsetV + c] = mData[offset + c];
+			neighboursV[offsetV + c] = m_data[offset + c];
 			neighboursI[index] = offset + c;
 		}
 		offset += Columns();
@@ -367,19 +427,19 @@ Matrix<T> Matrix<T>::Arrange(const Size rows, const Size columns)
 template<typename T>
 std::vector<T> Matrix<T>::GetRow(const Size row) const 
 { 
-	return { mData.begin() + (row * Rows()), mData.begin() + (row * Rows()) + Rows() }; 
+	return { m_data.begin() + (row * Rows()), m_data.begin() + (row * Rows()) + Rows() }; 
 }
 
 template<typename T>
 std::vector<T> Matrix<T>::GetColumn(const Size column) const 
 { 
-	return mData; 
+	return m_data; 
 }
 
 template<typename T>
 void Matrix<T>::AddRow(const T value) 
 { 
-	mData.resize(mData.size() + Columns(), value); ++mRows; 
+	m_data.resize(m_data.size() + Columns(), value); ++m_rows; 
 }
 
 template<typename T>
@@ -400,7 +460,7 @@ std::string Matrix<T>::Print() const
 		{
 			matrix << "\n";
 		}
-		matrix << mData[i];
+		matrix << m_data[i];
 		matrix << ", ";
 	}
 	matrix << "\n";

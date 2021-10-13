@@ -7,6 +7,7 @@ namespace Renderer
 	namespace Math
 	{
 		constexpr float PI = 3.1427f;
+        constexpr float PI2 = PI * 2.0f;
 		constexpr float Infinity = std::numeric_limits<float>::infinity();
 		constexpr float NaN = std::numeric_limits<float>::quiet_NaN();
 

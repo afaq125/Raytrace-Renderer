@@ -1,21 +1,25 @@
 #pragma once
 
-#define CUSTOM_OPERATOR_MATRIX(f) \
+#define CUSTOM_OPERATOR_MATRIX(op) \
 	auto result = *this; \
-	std::transform(this->mData.begin(), this->mData.end(), rhs.mData.begin(), result.mData.begin(), f); \
+	const Size count = result.Area(); \
+	for (Size i = 0; i < count; ++i) { result.m_data[i] op= rhs.m_data[i]; } \
 	return result; 
 
-#define CUSTOM_OPERATOR_MATRIX_T(f) \
+#define CUSTOM_OPERATOR_MATRIX_T(op) \
 	auto result = *this; \
-	std::transform(this->mData.begin(), this->mData.end(), result.mData.begin(), std::bind2nd(f, rhs)); \
+	const Size count = result.Area(); \
+	for (Size i = 0; i < count; ++i) { result.m_data[i] op= rhs; } \
 	return result; 
 
-#define CUSTOM_OPERATOR_MATRIX_EQUALS(f) \
-	std::transform(this->mData.begin(), this->mData.end(), rhs.mData.begin(), this->mData.begin(), f); \
+#define CUSTOM_OPERATOR_MATRIX_EQUALS(op) \
+	const Size count = Area(); \
+	for (Size i = 0; i < count; ++i) { this->m_data[i] op= rhs.m_data[i]; } \
 	return *this;
 
-#define CUSTOM_OPERATOR_MATRIX_T_EQUALS(f) \
-	std::transform(this->mData.begin(), this->mData.end(), this->mData.begin(), std::bind2nd(f, rhs)); \
+#define CUSTOM_OPERATOR_MATRIX_T_EQUALS(op) \
+	const Size count = Area(); \
+	for (Size i = 0; i < count; ++i) { this->m_data[i] op= rhs; } \
 	return *this;
 
 namespace Renderer
@@ -32,56 +36,58 @@ namespace Renderer
 			Matrix();
 			Matrix(const Size rows, const Size columns);
 			Matrix(const T value, const Size rows, const Size columns);
-			Matrix(std::vector<T>&& data, const Size rows, const Size columns);
+			Matrix(std::vector<T> data, const Size rows, const Size columns);
 			Matrix(const std::initializer_list<std::initializer_list<T>>& mat);
 
 			Matrix(const Matrix &rhs) = default;
 			Matrix(Matrix &&rhs) = default;
-			Matrix<T>& operator=(const Matrix<T>& rhs) = default;
-			Matrix<T>& operator=(Matrix<T>&& rhs) = default;
-			~Matrix() {}
+			Matrix& operator=(const Matrix& rhs) = default;
+			Matrix& operator=(Matrix&& rhs) = default;
+			virtual ~Matrix() {}
 
 			// Matrix functions
 			void Identity();
 			void Transpose();
-			Matrix<T> Minors(const Matrix<Size>& mask = Matrix<Size>(0, 0)) const;
+			Matrix Minors(const Matrix<Size>& mask = Matrix<Size>(0, 0)) const;
 			void Cofactor();
-			Matrix<T> Cofactors() const;
+			Matrix Cofactors() const;
 			T Determinant() const;
 			void Inverse();
-			Matrix<T> Inversed() const;
+			Matrix Inversed() const;
 			static void Laplace(
-				const Matrix<T>& matrix,
+				const Matrix& matrix,
 				const Size index,
 				const Size areaLimit,
-				Matrix<T>& result);
-			T Product(const Matrix<T>& matrix) const;
+				Matrix& result);
+			Matrix GaussElimination(const Matrix& solution = Matrix()) const;
+			T Product(const Matrix& matrix) const;
 			T Sum() const;
 			void Normalize();
-			Matrix<T> Normalized() const;
-			Matrix<T> Multiply(const Matrix<T>& matrix) const;
+			Matrix Normalized() const;
+			Matrix Multiply(const Matrix& matrix) const;
 
-			Matrix<T> Convolution2D(const Matrix<T>& kernel) const;
-			std::pair<Matrix<T>, Matrix<Size>> Neighbours(const Coordinate& index, const Size distance = 1) const;
+			Matrix Convolution2D(const Matrix& kernel) const;
+			std::pair<Matrix, Matrix<Size>> Neighbours(const Coordinate& index, const Size distance = 1) const;
 
 			// Construction
-			static Matrix<T> Arrange(const Size rows, const Size columns);
+			static Matrix Arrange(const Size rows, const Size columns);
 
 			// Accessors
-			T& operator[] (Size i) { return mData[i]; }
-			const T& operator[] (Size i) const { return mData[i]; }
+			T& operator[] (Size i) { return m_data[i]; }
+			const T& operator[] (Size i) const { return m_data[i]; }
 
 			inline Size Area() const { return Rows() * Columns(); }
-			inline Size Rows() const { return mRows; }
-			inline Size Columns() const { return mColumns; }
+			inline Size Rows() const { return m_rows; }
+			inline Size Columns() const { return m_columns; }
 			inline Size RowNumberFromIndex(const Size index) const { return index == 0 ? 0 : index / Columns(); }
 			inline Size ColumnNumberFromIndex(const Size index) const { return index == 0 ? 0 : index % Columns(); }
 			inline Coordinate CoordinateFromIndex(const Size index) const { return std::make_pair(RowNumberFromIndex(index), ColumnNumberFromIndex(index)); }
 			inline bool IsSqaure() const { return Rows() == Columns(); }
 
-			inline T Get(const Size c, const Size r) const { return mData[r + (c * Columns())]; }
-			inline void Set(const Size c, const Size r, const T value) { mData[r + (c * Rows())] = value; }
-			inline const std::vector<T>& Data() const { return mData; }
+			inline T Get(const Size c, const Size r) const { return m_data[r + (c * Columns())]; }
+			inline void Set(const Size c, const Size r, const T value) { m_data[r + (c * Rows())] = value; }
+			inline std::vector<T>& Data() { return m_data; }
+            inline const std::vector<T>& Data() const { return m_data; }
 
 			std::vector<T> GetRow(const Size row) const;
 			std::vector<T> GetColumn(const Size column) const;
@@ -89,52 +95,52 @@ namespace Renderer
 			void AddColumn(const T value);
 
 			// Operators
-			Matrix<T> operator* (const Matrix<T>& rhs) const { CUSTOM_OPERATOR_MATRIX(std::multiplies<T>()) }
-			Matrix<T> operator+ (const Matrix<T>& rhs) const { CUSTOM_OPERATOR_MATRIX(std::plus<T>()) }
-			Matrix<T> operator- (const Matrix<T>& rhs) const { CUSTOM_OPERATOR_MATRIX(std::minus<T>()) }
-			Matrix<T> operator/ (const Matrix<T>& rhs) const { CUSTOM_OPERATOR_MATRIX(std::divides<T>()) }
+			Matrix operator* (const Matrix& rhs) const { CUSTOM_OPERATOR_MATRIX(*) }
+			Matrix operator+ (const Matrix& rhs) const { CUSTOM_OPERATOR_MATRIX(+) }
+			Matrix operator- (const Matrix& rhs) const { CUSTOM_OPERATOR_MATRIX(-) }
+			Matrix operator/ (const Matrix& rhs) const { CUSTOM_OPERATOR_MATRIX(/) }
 
-			Matrix<T>& operator*= (const Matrix<T>& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(std::multiplies<T>()) }
-			Matrix<T>& operator+= (const Matrix<T>& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(std::plus<T>()) }
-			Matrix<T>& operator-= (const Matrix<T>& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(std::minus<T>()) }
-			Matrix<T>& operator/= (const Matrix<T>& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(std::divides<T>()) }
+			Matrix& operator*= (const Matrix& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(*) }
+			Matrix& operator+= (const Matrix& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(+) }
+			Matrix& operator-= (const Matrix& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(-) }
+			Matrix& operator/= (const Matrix& rhs) { CUSTOM_OPERATOR_MATRIX_EQUALS(/) }
 
-			Matrix<T> operator* (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(std::multiplies<T>()) }
-			Matrix<T> operator+ (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(std::plus<T>()) }
-			Matrix<T> operator- (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(std::minus<T>()) }
-			Matrix<T> operator/ (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(std::divides<T>()) }
+			Matrix operator* (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(*) }
+			Matrix operator+ (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(+) }
+			Matrix operator- (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(-) }
+			Matrix operator/ (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T(/) }
 
-			Matrix<T>& operator*= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(std::multiplies<T>()) }
-			Matrix<T>& operator+= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(std::plus<T>()) }
-			Matrix<T>& operator-= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(std::minus<T>()) }
-			Matrix<T>& operator/= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(std::divides<T>()) }
+		    Matrix& operator*= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(*) }
+			Matrix& operator+= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(+) }
+			Matrix& operator-= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(-) }
+			Matrix& operator/= (const T& rhs) { CUSTOM_OPERATOR_MATRIX_T_EQUALS(/) }
 
 			// Debugging
 			std::string Print() const;
 
 		private:
-			Size mRows, mColumns;
-			std::vector<T> mData;
+			Size m_rows, m_columns;
+			std::vector<T> m_data;
 		};
 
-		template <typename T, Size ROWS, Size COLUMNS>
-		class MatrixT : public Matrix<T>
+		template <typename T, Size SIZE>
+		class SquareMatrix : public Matrix<T>
 		{
 		public:
-			MatrixT() : Matrix<T>(ROWS, COLUMNS) {}
-			MatrixT(const T value) : Matrix(value, ROWS, COLUMNS) {}
-			MatrixT(std::vector<T>&& data) : Matrix(data, ROWS, COLUMNS) {}
-			MatrixT(const std::initializer_list<std::initializer_list<T>>& mat) : Matrix(mat)
+			SquareMatrix() : Matrix(SIZE, SIZE) {}
+			SquareMatrix(const T value) : Matrix(value, SIZE, SIZE) {}
+			SquareMatrix(std::vector<T> data) : Matrix(std::move(data), SIZE, SIZE) {}
+			SquareMatrix(const std::initializer_list<std::initializer_list<T>>& mat) : Matrix(mat)
 			{
 				Size rows = mat.size();
 				Size columns = (*mat.begin()).size();
-				if (rows * columns != ROWS * COLUMNS)
+				if (rows * columns != SIZE * SIZE)
 					throw std::logic_error("Incorrect number of arguments.");
 			}
-			virtual ~MatrixT() {}
+			~SquareMatrix() {}
 		};
 
-		using Matrix3 = MatrixT<float, 3, 3>;
-		using Matrix4 = MatrixT<float, 4, 4>;
+		using Matrix3 = SquareMatrix<float, 3>;
+		using Matrix4 = SquareMatrix<float, 4>;
 	}
 }

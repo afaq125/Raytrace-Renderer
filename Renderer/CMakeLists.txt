@@ -10,50 +10,75 @@ cmake_minimum_required(VERSION 3.16)
 # Paths and variables
 #
 
-SET(SOURCE_DIR
+set(PROJECT_DIR
     ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(TEST_SRC_DIR 
-    ${SOURCE_DIR}/Tests) 
+set(INCLUDE_FILES
+    ${PROJECT_DIR}/Include)
+
+set(SOURCE_FILES
+    ${PROJECT_DIR}/Include/AsyncQueue.h
+    ${PROJECT_DIR}/Include/Camera.h
+    ${PROJECT_DIR}/Include/Constants.h
+    ${PROJECT_DIR}/Include/Error.h
+    ${PROJECT_DIR}/Include/Lights.h
+    ${PROJECT_DIR}/Include/Logger.h
+    ${PROJECT_DIR}/Include/Matrix.h
+    ${PROJECT_DIR}/Include/Objects.h
+    ${PROJECT_DIR}/Include/RayTracer.h
+    ${PROJECT_DIR}/Include/Renderer.h
+    ${PROJECT_DIR}/Include/Shader.h
+    ${PROJECT_DIR}/Include/Singleton.h
+    ${PROJECT_DIR}/Include/ThreadPool.h
+    ${PROJECT_DIR}/Include/Utilities.h
+    ${PROJECT_DIR}/Include/Vector.h
+    ${PROJECT_DIR}/Source/Camera.cpp
+    ${PROJECT_DIR}/Source/Lights.cpp
+    ${PROJECT_DIR}/Source/Logger.cpp
+    ${PROJECT_DIR}/Source/Matrix.cpp
+    ${PROJECT_DIR}/Source/Objects.cpp
+    ${PROJECT_DIR}/Source/RayTracer.cpp
+    ${PROJECT_DIR}/Source/Renderer.cpp
+    ${PROJECT_DIR}/Source/Shader.cpp
+    ${PROJECT_DIR}/Source/Singleton.cpp
+    ${PROJECT_DIR}/Source/Utilities.cpp
+    ${PROJECT_DIR}/Source/Vector.cpp)
+
+set(TEST_INCLUDE_FILES
+    ${INCLUDE_FILES}
+    ${PROJECT_DIR}/Tests)
+
+set(TEST_SOURCE_FILES
+    ${PROJECT_DIR}/Tests/Tests.h
+    ${PROJECT_DIR}/Tests/TestUtilities.h
+    ${PROJECT_DIR}/Tests/RendererTest.cpp
+    ${PROJECT_DIR}/Tests/Tests.cpp
+    ${PROJECT_DIR}/Tests/TestUtilities.cpp
+    ${PROJECT_DIR}/Tests/VectorTest.cpp)
 
 set(GTEST_DIR 
-    ${SOURCE_DIR}/../Dependencies/GoogleTest/googletest)
+    ${PROJECT_DIR}/../Dependencies/GoogleTest/googletest)
 
-SET(SOURCE_FILES
-    ${SOURCE_DIR}/Include/Camera.h
-    ${SOURCE_DIR}/Include/Constants.h
-    ${SOURCE_DIR}/Include/Lights.h
-    ${SOURCE_DIR}/Include/Matrix.h
-    ${SOURCE_DIR}/Include/Objects.h
-    ${SOURCE_DIR}/Include/RayTracer.h
-    ${SOURCE_DIR}/Include/Renderer.h
-    ${SOURCE_DIR}/Include/Shader.h
-    ${SOURCE_DIR}/Include/Singleton.h
-    ${SOURCE_DIR}/Include/ThreadPool.h
-    ${SOURCE_DIR}/Include/Utilities.h
-    ${SOURCE_DIR}/Include/Vector.h
-    ${SOURCE_DIR}/Source/Camera.cpp
-    ${SOURCE_DIR}/Source/Lights.cpp
-    ${SOURCE_DIR}/Source/Matrix.cpp
-    ${SOURCE_DIR}/Source/Objects.cpp
-    ${SOURCE_DIR}/Source/RayTracer.cpp
-    ${SOURCE_DIR}/Source/Renderer.cpp
-    ${SOURCE_DIR}/Source/Shader.cpp
-    ${SOURCE_DIR}/Source/Singleton.cpp
-    ${SOURCE_DIR}/Source/Utilities.cpp
-    ${SOURCE_DIR}/Source/Vector.cpp)
+set(TARGET_NAME ${PROJECT_NAME})
 
-SET(TEST_FILES
-    ${SOURCE_DIR}/Tests/Tests.h
-    ${SOURCE_DIR}/Tests/Tests.cpp
-    ${SOURCE_DIR}/Tests/TestUtilities.h
-    ${SOURCE_DIR}/Tests/TestUtilities.cpp
-    ${SOURCE_DIR}/Tests/VectorTest.h
-    ${SOURCE_DIR}/Tests/VectorTest.cpp
-    ${SOURCE_DIR}/Tests/RendererTest.h
-    ${SOURCE_DIR}/Tests/RendererTest.cpp)
+#
+# Renderer lib
+#
 
-SET(TARGET_NAME ${PROJECT_NAME})
+add_library(
+    ${TARGET_NAME}
+    STATIC
+    ${SOURCE_FILES})
+
+target_include_directories(
+    ${TARGET_NAME}
+    PRIVATE
+    ${INCLUDE_FILES})
+
+target_precompile_headers(
+    ${TARGET_NAME}
+    PUBLIC
+    ${INCLUDE_FILES}/Renderer.h)
 
 #
 # FreeImage
@@ -68,25 +93,6 @@ find_library(FREEIMAGE_LIBRARY
     HINTS ${FreeImage_ROOT})
 
 include_directories(${FREEIMAGE_INCLUDE_DIR})
-
-#
-# Renderer lib
-#
-
-add_library(
-    ${TARGET_NAME}
-    STATIC
-    ${SOURCE_FILES})
-
-target_include_directories(
-    ${TARGET_NAME}
-    PUBLIC
-    ${SOURCE_DIR}/Include)
-
-target_precompile_headers(
-    ${TARGET_NAME}
-    PUBLIC
-    ${SOURCE_DIR}/Include/Renderer.h)
 
 #
 # GoogleTest lib
@@ -113,12 +119,12 @@ target_include_directories(
 
 add_executable(
     Tests
-    ${TEST_FILES})
+    ${TEST_SOURCE_FILES})
 
 target_include_directories(
     Tests
     PUBLIC
-    ${SOURCE_DIR}/Include)
+    ${TEST_INCLUDE_FILES})
 
 target_link_libraries(
     Tests

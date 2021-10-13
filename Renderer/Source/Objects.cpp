@@ -72,15 +72,21 @@ Intersection Plane::Intersect(const Ray& ray) const
 			const Vector3 position = (ray.GetDirection() * surfaceDistance) + ray.GetOrigin();
 			const auto pLocal = position - XForm.GetPosition();
 
+            const auto inverse = XForm.GetAxis().Inversed();
+            const auto local = pLocal.MatrixMultiply(inverse);
+
 			const auto halfWidth = Width / 2.0f;
 			const auto halfHeight = Height / 2.0f;
-			const Vector3 xLocal = { halfWidth, 0.0f, 0.0f };
-			const Vector3 yLocal = { 0.0f, 0.0f, halfHeight };
-			const auto xWorld = xLocal.MatrixMultiply(XForm.GetAxis());
-			const auto yWorld = yLocal.MatrixMultiply(XForm.GetAxis());
+			//const Vector3 xLocal = { halfWidth, 0.0f, 0.0f };
+			//const Vector3 yLocal = { 0.0f, 0.0f, halfHeight };
+			//const auto xWorld = xLocal.MatrixMultiply(XForm.GetAxis());
+			//const auto yWorld = yLocal.MatrixMultiply(XForm.GetAxis());
 
-			const auto xDistance = xWorld.DotProduct(pLocal) / halfWidth;
-			const auto yDistance = yWorld.DotProduct(pLocal) / halfHeight;
+			//const auto xDistance = xWorld.DotProduct(pLocal) / halfWidth;
+			//const auto yDistance = yWorld.DotProduct(pLocal) / halfHeight;
+
+            const auto xDistance = local[0];
+            const auto yDistance = local[2];
 
 			if (xDistance > -halfWidth && xDistance < halfWidth &&
 				yDistance > -halfHeight && yDistance < halfHeight)

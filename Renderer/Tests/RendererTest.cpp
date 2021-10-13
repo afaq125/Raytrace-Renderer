@@ -3,6 +3,18 @@
 using namespace Renderer;
 using namespace Renderer::Math;
 
+class RendererUnitTests : public ::testing::Test
+{
+public:
+	void SetUp() override
+	{
+	}
+
+	void TearDown() override
+	{
+	}
+};
+
 TEST_F(RendererUnitTests, AreaLightTest)
 {
 	std::vector<std::shared_ptr<Object>> objects;
@@ -150,15 +162,15 @@ TEST_F(RendererUnitTests, GlobalIlluminationTest)
 		lights.push_back(pLight);
 	}
 
-	auto camera = Camera(1024.0f, 1024.0f, 1.0f, 0.005f);
+	auto camera = Camera(512.0f, 512.0f, 1.0f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, -2.5f, 4.5f });
 	camera.LookAt({ 0.0f, -2.5f, 0.0f }, Y_MINUS_AXIS);
 
 	RayTracer::Settings settings;
-	settings.SamplesPerPixel = 20u;
+	settings.SamplesPerPixel = 1u;
 	settings.MaxDepth = 3u;
 	settings.MaxGIDepth = 2u;
-	settings.SecondryBounces = 15u;
+	settings.SecondryBounces = 2u;
 
 	const auto RenderGIScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderGIScene, "Render_GI.png");
@@ -239,10 +251,10 @@ TEST_F(RendererUnitTests, PBRTest)
 	camera.LookAt({ 0.0f, 0.0f, 0.0f }, Y_MINUS_AXIS);
 
 	RayTracer::Settings settings;
-	settings.SamplesPerPixel = 20u;
+	settings.SamplesPerPixel = 2u;
 	settings.MaxDepth = 2u;
 	settings.MaxGIDepth = 1u;
-	settings.SecondryBounces = 10u;
+	settings.SecondryBounces = 1u;
 
 	const auto RenderPBRScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
 	SaveImage(RenderPBRScene, "Render_PBR.png");

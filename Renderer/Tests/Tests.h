@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <chrono>
+#include <thread>
 
 #include "gtest/gtest.h"
 
@@ -10,5 +12,3 @@
 #include <cctype>
 
 #include "TestUtilities.h"
-#include "VectorTest.h"
-#include "RendererTest.h"

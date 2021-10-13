@@ -13,6 +13,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <vector>
 #include <algorithm>
@@ -21,14 +22,23 @@
 #include <random>
 #include <map>
 #include <atomic>
+#include <iomanip>
+#include <functional>
+#include <filesystem>
+#include <queue>
+#include <deque>
+#include <optional>
 
 #define _USE_MATH_DEFINES
 
 #include "Constants.h"
+#include "Error.h"
+#include "AsyncQueue.h"
+#include "Singleton.h"
+#include "Logger.h"
 #include "Matrix.h"
 #include "Vector.h"
 #include "ThreadPool.h"
-#include "Singleton.h"
 #include "Utilities.h"
 #include "Shader.h"
 #include "Objects.h"

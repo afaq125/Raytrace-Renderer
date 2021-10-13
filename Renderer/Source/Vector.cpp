@@ -3,99 +3,98 @@
 using namespace Renderer;
 using namespace Renderer::Math;
 
-template<typename T, Size SIZE>
-Vector<T, SIZE>::Vector()
-{ 
-	std::fill(mData.begin(), mData.end(), static_cast<T>(0));
-}
-
-template<typename T, Size SIZE>
-Vector<T, SIZE>::Vector(const T value)
+template<typename T, Size S>
+Vector<T, S>::Vector()
 {
-	std::fill(mData.begin(), mData.end(), value);
+    m_data = std::vector<T>(S);
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE>::Vector(const T* value)
+template<typename T, Size S>
+Vector<T, S>::Vector(const T value)
 {
-	std::copy_n(value, SIZE, mData.begin());
+    m_data = std::vector<T>(S, value);
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE>::Vector(std::array<T, SIZE>& data) :
-	mData(std::move(data))
+template<typename T, Size S>
+Vector<T, S>::Vector(const T* data)
 {
+	std::copy_n(data, S, std::back_inserter(m_data));
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE>::Vector(const std::initializer_list<T>& data)
+template<typename T, Size S>
+Vector<T, S>::Vector(std::vector<T> data) :
+	m_data(std::move(data))
 {
-	if (SIZE != data.size())
-		throw std::logic_error("Intializer list length not the same as vector size.");
-
-	for (Size i = 0; i < SIZE; ++i)
-	{
-		mData[i] = *(data.begin() + i);
-	}
+    if (m_data.size() != S)
+    {
+        throw std::runtime_error("Invalid size of std::vector.");
+    }
 }
 
-template<typename T, Size SIZE>
-T Vector<T, SIZE>::Length() const
+template<typename T, Size S>
+Vector<T, S>::Vector(const std::initializer_list<T>& data)
+{
+    m_data = std::vector<T>(S);
+    std::copy(data.begin(), data.end(), m_data.begin());
+}
+
+template<typename T, Size S>
+T Vector<T, S>::Length() const
 {
 	T sum = 0.0;
-	for (const auto& value : mData)
+	for (const auto& value : m_data)
 	{
 		sum += value * value;
 	}
 	return std::sqrt(sum);
 }
 
-template<typename T, Size SIZE>
-void Vector<T, SIZE>::Normalize()
+template<typename T, Size S>
+void Vector<T, S>::Normalize()
 {
 	double length = Length();
-	std::for_each(mData.begin(), mData.end(), [&](auto& index) { index /= static_cast<T>(length); });
+	std::for_each(m_data.begin(), m_data.end(), [&](auto& index) { index /= static_cast<T>(length); });
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::Normalized() const
+template<typename T, Size S>
+Vector<T, S> Vector<T, S>::Normalized() const
 {
 	auto normalized = *this;
 	normalized.Normalize();
 	return normalized;
 }
 
-template<typename T, Size SIZE>
-void Vector<T, SIZE>::Clamp(const Size index, const T a, const T b)
+template<typename T, Size S>
+void Vector<T, S>::Clamp(const Size index, const T a, const T b)
 {
-	mData[index] = Renderer::Math::Clamp<T>(mData[index], a, b);
+	m_data[index] = Renderer::Math::Clamp<T>(m_data[index], a, b);
 }
 
-template<typename T, Size SIZE>
-void Vector<T, SIZE>::Clamp(const T a, const T b)
+template<typename T, Size S>
+void Vector<T, S>::Clamp(const T a, const T b)
 {
-	std::for_each(mData.begin(), mData.end(), [&](auto& v) { v = Renderer::Math::Clamp<T>(v, a, b); });
+	std::for_each(m_data.begin(), m_data.end(), [&](auto& v) { v = Renderer::Math::Clamp<T>(v, a, b); });
 }
 
-template<typename T, Size SIZE>
-T Vector<T, SIZE>::DotProduct(const Vector<T, SIZE>& v) const
+template<typename T, Size S>
+T Vector<T, S>::DotProduct(const Vector<T, S>& v) const
 {
 	T sum = static_cast<T>(0);
-	for (Size i = 0; i < mData.size(); ++i)
-		sum += mData[i] * v[i];
+	for (Size i = 0; i < m_data.size(); ++i)
+		sum += m_data[i] * v[i];
 	return sum;
 }
 
-template<typename T, Size SIZE>
-T Vector<T, SIZE>::Distance(const Vector<T, SIZE>& v) const
+template<typename T, Size S>
+T Vector<T, S>::Distance(const Vector<T, S>& v) const
 {
 	return (v - *this).Length();
 }
 
-template<typename T, Size SIZE>
-void Vector<T, SIZE>::SetNaNsOrINFs(const T value, const bool setNaNs, bool setINFs)
+template<typename T, Size S>
+void Vector<T, S>::SetNaNsOrINFs(const T value, const bool setNaNs, bool setINFs)
 {
-	for (auto& v : mData)
+	for (auto& v : m_data)
 	{
 		if (std::isnan(v) && setNaNs)
 			v = value;
@@ -104,27 +103,27 @@ void Vector<T, SIZE>::SetNaNsOrINFs(const T value, const bool setNaNs, bool setI
 	}
 }
 
-template<typename T, Size SIZE>
-void Vector<T, SIZE>::Pow(const T exponent)
+template<typename T, Size S>
+void Vector<T, S>::Pow(const T exponent)
 {
-	std::for_each(mData.begin(), mData.end(), [&](auto& v) { v = std::pow(v, exponent); });
+	std::for_each(m_data.begin(), m_data.end(), [&](auto& v) { v = std::pow(v, exponent); });
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::Mix(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b, const T &amount)
+template<typename T, Size S>
+Vector<T, S> Vector<T, S>::Mix(const Vector<T, S>& a, const Vector<T, S>& b, const T &amount)
 {
-	Vector<T, SIZE> result;
-	for (Size i = 0; i < result.Data().size(); ++i)
+	Vector<T, S> result;
+    for (Size i = 0; i < result.Data().size(); ++i)
 	{
 		result[i] = Math::Mix<T>(a[i], b[i], amount);
 	}
 	return result;
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::Min(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b)
+template<typename T, Size S>
+Vector<T, S> Vector<T, S>::Min(const Vector<T, S>& a, const Vector<T, S>& b)
 {
-	Vector<T, SIZE> result;
+    Vector<T, S> result;
 	for (Size i = 0; i < result.Data().size(); ++i)
 	{
 		result[i] = std::min(a[i], b[i]);
@@ -132,10 +131,10 @@ Vector<T, SIZE> Vector<T, SIZE>::Min(const Vector<T, SIZE>& a, const Vector<T, S
 	return result;
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::Max(const Vector<T, SIZE>& a, const Vector<T, SIZE>& b)
+template<typename T, Size S>
+Vector<T, S> Vector<T, S>::Max(const Vector<T, S>& a, const Vector<T, S>& b)
 {
-	Vector<T, SIZE> result;
+	Vector<T, S> result;
 	for (Size i = 0; i < result.Data().size(); ++i)
 	{
 		result[i] = std::max(a[i], b[i]);
@@ -143,45 +142,26 @@ Vector<T, SIZE> Vector<T, SIZE>::Max(const Vector<T, SIZE>& a, const Vector<T, S
 	return result;
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::MatrixMultiply(const Matrix<T>& matrix) const
+template<typename T, Size S>
+Vector<T, S> Vector<T, S>::MatrixMultiply(const Matrix<T>& matrix) const
 {
-	if (matrix.Rows() != mData.size())
+	if (matrix.Rows() != m_data.size())
 		throw std::logic_error("Matrix rows must match vector size.");
 
-	Matrix<T> VtoM(mData.size(), 1u);
-	for (Size i = 0; i < matrix.Rows(); ++i)
-		VtoM[i] = mData[i];
+	const Matrix<T> v_to_m(m_data, m_data.size(), 1u);
+    Vector<T, S> m_to_v(std::move(matrix.Multiply(v_to_m).Data()));
 
-	const auto result = matrix.Multiply(VtoM);
-
-	Vector<T, SIZE> MtoV;
-	for (Size i = 0; i < result.Rows(); ++i)
-		MtoV[i] = result[i];
-
-	return MtoV;
+	return m_to_v;
 }
 
-template<typename T, Size SIZE>
-Vector<T, SIZE> Vector<T, SIZE>::CrossProduct(const Vector<T, SIZE>& other) const
+template<typename T, Size S>
+Vector<T, S> Vector<T, S>::CrossProduct(const Vector<T, S>& other) const
 {
-	if (mData.size() != 3)
-		throw std::logic_error("Incorrect number of arguments.");
-
-	auto result = Vector<T, SIZE>();
-	result[0] = mData[1] * other[2] - mData[2] * other[1];
-	result[1] = mData[2] * other[0] - mData[0] * other[2];
-	result[2] = mData[0] * other[1] - mData[1] * other[0];
+	auto result = Vector<T, S>();
+	result[0] = m_data[1] * other[2] - m_data[2] * other[1];
+	result[1] = m_data[2] * other[0] - m_data[0] * other[2];
+	result[2] = m_data[0] * other[1] - m_data[1] * other[0];
 	return result;
-}
-
-template<typename T, Size SIZE>
-T Vector<T, SIZE>::AngleBetween(const Vector<T, SIZE>& other) const
-{
-	if (mData.size() != 3)
-		throw std::logic_error("Incorrect number of arguments.");
-
-	return static_cast<T>(0);
 }
 
 template class Vector<float, 2>;

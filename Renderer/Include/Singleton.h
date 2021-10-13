@@ -6,31 +6,18 @@ namespace Renderer
 	class Singleton
 	{
 	public:
-		inline static T* GetSingleton()
+		inline static T& GetInstance()
 		{
-			if (mSingleton == nullptr)
-			{
-				mSingleton = new T();
-			}
-			return mSingleton;
-		}
-
-		inline static void Destroy()
-		{
-			if (mSingleton != nullptr)
-			{
-				delete mSingleton;
-			}
-			mSingleton = nullptr;
+			static T singleton;
+			return singleton;
 		}
 
 	protected:
 		Singleton() = default;
+		virtual ~Singleton() {};
 		Singleton(const Singleton &rhs) = delete;
 		Singleton(Singleton &&rhs) = delete;
-		Singleton<T>& operator=(const Singleton<T>& rhs) = delete;
-		virtual ~Singleton() {};
-
-		static T* mSingleton;
+		Singleton& operator=(const Singleton& rhs) = delete;
+		Singleton& operator=(Singleton&& rhs) = default;
 	};
 }
