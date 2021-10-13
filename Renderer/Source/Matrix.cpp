@@ -81,8 +81,8 @@ void Matrix<T>::Transpose()
 		for (Size c = 0; c < Columns(); ++c)
 		{
 			const Size index = Columns() * r + c;
-			const Size tIndex = (Rows() * c) + r;
-			transposed[index] = m_data[tIndex];
+			const Size t_index = (Rows() * c) + r;
+			transposed[index] = m_data[t_index];
 		}
 	}
 	m_data = transposed;
@@ -153,22 +153,19 @@ T Matrix<T>::Determinant() const
 template<typename T>
 void Matrix<T>::Inverse()
 {
-	//const T determinant = Determinant();
-	//Transpose();
-	//m_data = Minors().Data();
-	//Cofactor();
+	const T determinant = Determinant();
+	Transpose();
+	m_data = Minors().Data();
+	Cofactor();
 
-	//T value = static_cast<T>(1) / determinant;
-	//std::for_each(m_data.begin(), m_data.end(), [&](auto &i) { i *= value; });
-	*this = GaussElimination();
+	T value = static_cast<T>(1) / determinant;
+	for(auto &i : m_data) { i *= value; };
 }
 
 template<typename T>
 Matrix<T> Matrix<T>::Inversed() const
 {
-	auto inversed = *this;
-	inversed.Inverse();
-	return inversed;
+	return GaussElimination();
 }
 
 template<typename T>
@@ -186,19 +183,19 @@ void Matrix<T>::Laplace(
 	if (matrix.Area() != area)
 	{
 		Matrix<T> expanded(matrix.Rows() - 1, matrix.Columns() - 1);
-		const Size rIndex = matrix.RowNumberFromIndex(index);
-		const Size cIndex = matrix.ColumnNumberFromIndex(index);
+		const Size r_index = matrix.RowNumberFromIndex(index);
+		const Size c_index = matrix.ColumnNumberFromIndex(index);
 
-		Size eIndex = 0;
+		Size e_index = 0;
 		for (Size r = 0; r < matrix.Rows(); ++r)
 		{
 			for (Size c = 0; c < matrix.Columns(); ++c)
 			{
 				const Size index = matrix.Columns() * r + c;
-				if (r == rIndex || c == cIndex)
+				if (r == r_index || c == c_index)
 					continue;
-				expanded[eIndex] = matrix[index];
-				++eIndex;
+				expanded[e_index] = matrix[index];
+				++e_index;
 			}
 		}
 
@@ -326,9 +323,9 @@ Matrix<T> Matrix<T>::Multiply(const Matrix<T>& matrix) const
 
 			for (Size i = 0; i < Columns(); ++i)
 			{
-				Size thisOffset = Columns() * r + i;
-				Size otherOffset = matrix.Rows() * c + i;
-				sum += m_data[thisOffset] * matrix[otherOffset];
+				Size this_offset = Columns() * r + i;
+				Size other_offset = matrix.Rows() * c + i;
+				sum += m_data[this_offset] * matrix[other_offset];
 			}
 
 			result[index] = sum;
@@ -376,37 +373,38 @@ std::pair<Matrix<T>, Matrix<Size>> Matrix<T>::Neighbours(const typename Matrix<T
 			return max;
 		return value;
 	};
-	const int minR = validate(row - static_cast<int>(distance), static_cast<int>(Area()));
-	const int minC = validate(column - static_cast<int>(distance), static_cast<int>(Area()));
-	const int maxR = validate(row + static_cast<int>(distance), static_cast<int>(Rows()) - 1);
-	const int maxC = validate(column + static_cast<int>(distance), static_cast<int>(Columns()) - 1);
-	const int rows = (maxR - minR) + 1;
-	const int columns = (maxC - minC) + 1;
+
+	const int min_r = validate(row - static_cast<int>(distance), static_cast<int>(Area()));
+	const int min_c = validate(column - static_cast<int>(distance), static_cast<int>(Area()));
+	const int max_r = validate(row + static_cast<int>(distance), static_cast<int>(Rows()) - 1);
+	const int max_c = validate(column + static_cast<int>(distance), static_cast<int>(Columns()) - 1);
+	const int rows = (max_r - min_r) + 1;
+	const int columns = (max_c - min_c) + 1;
 	const int area = rows * columns;
-	const int start = (minR * (static_cast<int>(Area()) / static_cast<int>(Rows()))) + minC;
+	const int start = (min_r * (static_cast<int>(Area()) / static_cast<int>(Rows()))) + min_c;
 
-	const int realRC = (static_cast<int>(distance) * 2) + 1;
-	const int realRStart = maxR > std::ceil(double(rows) / 2.0) ? 0 : realRC - rows;
-	const int realCStart = maxC > std::ceil(double(columns) / 2.0) ? 0 : realRC - columns;
-	const int realStart = realRStart * realRC + realCStart;
+	const int real_rc = (static_cast<int>(distance) * 2) + 1;
+	const int real_r_start = max_r > std::ceil(double(rows) / 2.0) ? 0 : real_rc - rows;
+	const int real_c_start = max_c > std::ceil(double(columns) / 2.0) ? 0 : real_rc - columns;
+	const int real_start = real_r_start * real_rc + real_c_start;
 
-	Matrix<T> neighboursV(static_cast<T>(0), realRC, realRC);
-	Matrix<Size> neighboursI(0, rows, columns);
+	Matrix<T> neighbours_values(static_cast<T>(0), real_rc, real_rc);
+	Matrix<Size> neighbours_indicies(0, rows, columns);
 	Size offset = start;
-	Size offsetV = realStart;
+	Size offset_v = real_start;
 	for (Size r = 0; r < rows; ++r)
 	{
 		for (Size c = 0; c < columns; ++c)
 		{
 			const Size index = columns * r + c;
-			neighboursV[offsetV + c] = m_data[offset + c];
-			neighboursI[index] = offset + c;
+            neighbours_values[offset_v + c] = m_data[offset + c];
+            neighbours_indicies[index] = offset + c;
 		}
 		offset += Columns();
-		offsetV += realRC;
+        offset_v += real_rc;
 	}
 
-	return { neighboursV, neighboursI };
+	return { neighbours_values, neighbours_indicies };
 }
 
 // Construction

@@ -40,7 +40,6 @@ set(SOURCE_FILES
     ${PROJECT_DIR}/Source/RayTracer.cpp
     ${PROJECT_DIR}/Source/Renderer.cpp
     ${PROJECT_DIR}/Source/Shader.cpp
-    ${PROJECT_DIR}/Source/Singleton.cpp
     ${PROJECT_DIR}/Source/Utilities.cpp
     ${PROJECT_DIR}/Source/Vector.cpp)
 

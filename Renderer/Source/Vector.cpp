@@ -18,6 +18,7 @@ Vector<T, S>::Vector(const T value)
 template<typename T, Size S>
 Vector<T, S>::Vector(const T* data)
 {
+    m_data.reserve(S);
 	std::copy_n(data, S, std::back_inserter(m_data));
 }
 
@@ -53,7 +54,10 @@ template<typename T, Size S>
 void Vector<T, S>::Normalize()
 {
 	double length = Length();
-	std::for_each(m_data.begin(), m_data.end(), [&](auto& index) { index /= static_cast<T>(length); });
+	for (auto& index : m_data) 
+    {
+        index /= static_cast<T>(length);
+    }
 }
 
 template<typename T, Size S>
@@ -73,15 +77,20 @@ void Vector<T, S>::Clamp(const Size index, const T a, const T b)
 template<typename T, Size S>
 void Vector<T, S>::Clamp(const T a, const T b)
 {
-	std::for_each(m_data.begin(), m_data.end(), [&](auto& v) { v = Renderer::Math::Clamp<T>(v, a, b); });
+    for (auto& index : m_data)
+    {
+        index = Renderer::Math::Clamp<T>(index, a, b);
+    }
 }
 
 template<typename T, Size S>
 T Vector<T, S>::DotProduct(const Vector<T, S>& v) const
 {
-	T sum = static_cast<T>(0);
-	for (Size i = 0; i < m_data.size(); ++i)
-		sum += m_data[i] * v[i];
+    T sum = static_cast<T>(0);
+    for (Size i = 0; i < m_data.size(); ++i)
+    {
+        sum += m_data[i] * v[i];
+    }
 	return sum;
 }
 
@@ -94,19 +103,22 @@ T Vector<T, S>::Distance(const Vector<T, S>& v) const
 template<typename T, Size S>
 void Vector<T, S>::SetNaNsOrINFs(const T value, const bool setNaNs, bool setINFs)
 {
-	for (auto& v : m_data)
-	{
-		if (std::isnan(v) && setNaNs)
-			v = value;
-		if (std::isinf(v) && setINFs)
-			v = value;
+    for (auto& v : m_data)
+    {
+        if ((std::isnan(v) && setNaNs) || (std::isinf(v) && setINFs))
+        {
+            v = value;
+        }
 	}
 }
 
 template<typename T, Size S>
 void Vector<T, S>::Pow(const T exponent)
 {
-	std::for_each(m_data.begin(), m_data.end(), [&](auto& v) { v = std::pow(v, exponent); });
+    for (auto& index : m_data)
+    {
+        index = std::pow(index, exponent);
+    }
 }
 
 template<typename T, Size S>
@@ -145,9 +157,11 @@ Vector<T, S> Vector<T, S>::Max(const Vector<T, S>& a, const Vector<T, S>& b)
 template<typename T, Size S>
 Vector<T, S> Vector<T, S>::MatrixMultiply(const Matrix<T>& matrix) const
 {
-	if (matrix.Rows() != m_data.size())
-		throw std::logic_error("Matrix rows must match vector size.");
-
+    if (matrix.Rows() != m_data.size())
+    {
+        throw std::logic_error("Matrix rows must match vector size.");
+    }
+		
 	const Matrix<T> v_to_m(m_data, m_data.size(), 1u);
     Vector<T, S> m_to_v(std::move(matrix.Multiply(v_to_m).Data()));
 
@@ -157,7 +171,12 @@ Vector<T, S> Vector<T, S>::MatrixMultiply(const Matrix<T>& matrix) const
 template<typename T, Size S>
 Vector<T, S> Vector<T, S>::CrossProduct(const Vector<T, S>& other) const
 {
-	auto result = Vector<T, S>();
+    if (m_data.size() != 3)
+    {
+        throw std::logic_error("Vector must be 3 dimensional.");
+    }
+
+    Vector<T, S> result;
 	result[0] = m_data[1] * other[2] - m_data[2] * other[1];
 	result[1] = m_data[2] * other[0] - m_data[0] * other[2];
 	result[2] = m_data[0] * other[1] - m_data[1] * other[0];

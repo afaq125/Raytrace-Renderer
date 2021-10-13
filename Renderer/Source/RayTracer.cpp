@@ -36,7 +36,6 @@ Camera::Viewport RayTracer::Render(
     auto job = [&](const Size i) -> void
     {
         const Size index = indicies[i];
-        LOG_INFO("Rendering pixel: ", index);
 
         auto colour = Vector3();
         for (Size s = 0; s < mSettings.SamplesPerPixel; ++s)
