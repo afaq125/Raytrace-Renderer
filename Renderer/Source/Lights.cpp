@@ -90,7 +90,7 @@ float Enviroment::Shadow(const std::vector<std::shared_ptr<Object>>& objects, co
 
 Sample Enviroment::Sampler(const Vector3& origin, const Vector3& direction, const Vector3& up, const SamplerSettings& settings) const
 {
-	const auto axis = Transform(direction, up, { 0.0f,0.0f,0.0f });
+	const auto axis = Transform(direction, up, { 0.0f,0.0f,0.0f }, false);
 	
 	const float random1 = Random();
 	const float random2 = Random();

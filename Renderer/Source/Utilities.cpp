@@ -9,15 +9,15 @@ namespace
     std::uniform_real_distribution<float> Distribution(0, 1);
 }
 
-Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3& position) :
-    mAxis(Matrix3()),
-    mPosition(position)
+Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3& position, const bool calculate_inverse) :
+    m_axis(Matrix3()),
+    m_position(position)
 {
     const float difference = direction.DotProduct(up);
     if (difference == 1.0f || difference == -1.0f)
     {
         LOG_WARNING("Warning direction and up are perpendicular when creating axis. Returning identity matrix.");
-        mAxis.Identity();
+        m_axis.Identity();
         return;
     }
 
@@ -26,9 +26,14 @@ Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3&
     const auto x = z.CrossProduct(y).Normalized();
     for (Size i = 0; i < 3; ++i)
     {
-        mAxis.Set(i, 0, y[i]);
-        mAxis.Set(i, 1, z[i]);
-        mAxis.Set(i, 2, x[i]);
+        m_axis.Set(i, 0, y[i]);
+        m_axis.Set(i, 1, z[i]);
+        m_axis.Set(i, 2, x[i]);
+    }
+
+    if (calculate_inverse)
+    {
+        m_inverse = m_axis.Inversed();
     }
 }
 

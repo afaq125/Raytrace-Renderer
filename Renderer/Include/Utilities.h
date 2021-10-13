@@ -10,30 +10,43 @@ namespace Renderer
 	{
 	public:
 		Transform() :
-			mAxis(Matrix3()),
-			mPosition(Vector3())
+            m_axis(Matrix3()),
+			m_position(Vector3())
 		{
-			mAxis.Identity();
+            m_axis.Identity();
 		}
 
-		Transform(const Matrix3& axis, const Vector3& position) :
-			mAxis(axis),
-			mPosition(position)
+		Transform(const Matrix3& axis, const Vector3& position, const bool calculate_inverse) :
+            m_axis(axis),
+            m_position(position)
 		{
+            if (calculate_inverse)
+            {
+                m_inverse = m_axis.Inversed();
+            }
 		}
 
-		Transform(const Vector3& direction, const Vector3& up, const Vector3& position);
+		Transform(const Vector3& direction, const Vector3& up, const Vector3& position, const bool calculate_inverse);
 
 		~Transform() = default;
 
-		void SetAxis(const Matrix3& axis) { mAxis = axis; }
-		void SetPosition(const Vector3& position) { mPosition = position; }
-		Matrix3 GetAxis() const { return mAxis; }
-		Vector3 GetPosition() const { return mPosition; }
+		void SetAxis(const Matrix3& axis, const bool calculate_inverse = true)
+        {
+            m_axis = axis;
+            if (calculate_inverse)
+            {
+                m_inverse = m_axis.Inversed();
+            }
+        }
+		void SetPosition(const Vector3& position) { m_position = position; }
+		const Matrix3& GetAxis() const { return m_axis; }
+		const Vector3& GetPosition() const { return m_position; }
+        const Matrix3& GetInverse() const { return m_axis; }
 
 	private:
-		Matrix3 mAxis;
-		Vector3 mPosition;
+        Matrix<float> m_inverse;
+		Matrix3 m_axis;
+		Vector3 m_position;
 	};
 
 	class Ray

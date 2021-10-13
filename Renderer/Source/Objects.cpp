@@ -6,7 +6,7 @@ using namespace Renderer::Lights;
 
 Vector3 Plane::WorldToUV(const Vector3 position) const
 {
-	const auto inverse = XForm.GetAxis().Inversed();
+	const auto& inverse = XForm.GetInverse();
 	const Vector3 whLocal = { Width / 2.0f, 0.0f, Height / 2.0f };
 	const auto local = (position - XForm.GetPosition()).MatrixMultiply(inverse) - whLocal;
 	const auto u = std::abs(local[0] / Width);
@@ -42,7 +42,7 @@ void Plane::SetDirection(const Vector3& direction)
 		return;
 	}
 
-	XForm = Transform(normalised, Y_AXIS, XForm.GetPosition());
+	XForm = Transform(normalised, Y_AXIS, XForm.GetPosition(), true);
 }
 
 Vector3 Plane::CalculateNormal(const Vector3& hit) const
@@ -72,7 +72,7 @@ Intersection Plane::Intersect(const Ray& ray) const
 			const Vector3 position = (ray.GetDirection() * surfaceDistance) + ray.GetOrigin();
 			const auto pLocal = position - XForm.GetPosition();
 
-            const auto inverse = XForm.GetAxis().Inversed();
+            const auto& inverse = XForm.GetInverse();
             const auto local = pLocal.MatrixMultiply(inverse);
 
 			const auto halfWidth = Width / 2.0f;

@@ -35,7 +35,7 @@ Vector3 Camera::GetPixelPosition(const float u, const float v) const
 void Camera::LookAt(const Vector3& target, const Vector3& up)
 {
 	const auto direction = XForm.GetPosition() - target;
-	const auto axis = Transform(direction, up, XForm.GetPosition());
+	const auto axis = Transform(direction, up, XForm.GetPosition(), true);
 	XForm.SetAxis(axis.GetAxis());
 }
 

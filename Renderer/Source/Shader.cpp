@@ -167,7 +167,7 @@ Vector3 Shader::SceneReflections(
 		{
 			const auto view = (origin - hit).Normalized();
 			const auto reflection = Ray::Reflection(normal, view);
-			const auto axis = Transform(reflection, view, hit);
+			const auto axis = Transform(reflection, view, hit, false);
 			const float random1 = Random();
 			const float random2 = Random();
 			const Vector3 hemisphereSample = ImportanceSampleHemisphereGGX(random1, random2, roughness);

@@ -104,7 +104,7 @@ Vector3 RayTracer::GlobalIllumination(const Ray& ray, const Vector3& normal, con
 {
     Vector3 indirect = 0.0f;
     constexpr float pdf = 1.0f / (2.0f * PI);
-    const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit);
+    const auto axis = Transform(normal, (ray.GetOrigin() - hit).Normalized(), hit, false);
     for (Size i = 0; i < mSettings.SecondryBounces; ++i)
     {
         const float random1 = Random();
