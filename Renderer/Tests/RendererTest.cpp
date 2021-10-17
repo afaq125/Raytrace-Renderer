@@ -89,7 +89,7 @@ TEST_F(RendererUnitTests, AreaLightTest)
 		lights.push_back(aLight);
 	}
 
-	auto camera = Camera(1024.0f, 1024.0f, 1.5f, 0.005f);
+	auto camera = Camera(1024u, 1024u, 1.5f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, 0.0f, 9.0f });
 	camera.LookAt({ 0.0f, 0.0f, 0.0f }, Y_MINUS_AXIS);
 
@@ -100,7 +100,7 @@ TEST_F(RendererUnitTests, AreaLightTest)
 	settings.SecondryBounces = 0u;
 
 	const auto RenderGIScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
-	SaveImage(RenderGIScene, "Render_AreaLight.png");
+	SaveImage(RenderGIScene.GetPixels(), "Render_AreaLight.png");
 }
 
 TEST_F(RendererUnitTests, GlobalIlluminationTest)
@@ -162,26 +162,26 @@ TEST_F(RendererUnitTests, GlobalIlluminationTest)
 		lights.push_back(pLight);
 	}
 
-	auto camera = Camera(512.0f, 512.0f, 1.0f, 0.005f);
+	auto camera = Camera(1024u, 1024u, 1.0f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, -2.5f, 4.5f });
 	camera.LookAt({ 0.0f, -2.5f, 0.0f }, Y_MINUS_AXIS);
 
 	RayTracer::Settings settings;
-	settings.SamplesPerPixel = 1u;
+	settings.SamplesPerPixel = 20u;
 	settings.MaxDepth = 3u;
 	settings.MaxGIDepth = 2u;
-	settings.SecondryBounces = 2u;
+	settings.SecondryBounces = 15u;
 
 	const auto RenderGIScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
-	SaveImage(RenderGIScene, "Render_GI.png");
+	SaveImage(RenderGIScene.GetPixels(), "Render_GI.png");
 }
 
 TEST_F(RendererUnitTests, PBRTest)
 {
 	std::vector<std::shared_ptr<Object>> objects;
 	{
-		const Size rows = 5;
-		const Size columns = 5;
+		const Size rows = 2;
+		const Size columns = 2;
 		const Size area = rows * columns;
 		const float spacing = 5.0f;
 		for (Size i = 0; i < area; ++i)
@@ -204,10 +204,10 @@ TEST_F(RendererUnitTests, PBRTest)
 		}
 
 		auto plane = std::make_shared<Plane>();
-		plane->Width = 1000.0f;
-		plane->Height = 1000.0f;
+		plane->Width = 50.0f;
+		plane->Height = 50.0f;
 		plane->SetDirection({ 0.0f, 0.0f, 1.0f });
-		plane->XForm.SetPosition({ 0.0f, 0.0f, 0.0f });
+		plane->XForm.SetPosition({ 0.0f, -1.0f, 0.0f });
 		plane->Material.Albedo = { 0.8f, 0.8f, 0.8f };
 		plane->Material.Metalness = 0.0f;
 		plane->Material.Roughness = 1.0f;
@@ -246,7 +246,7 @@ TEST_F(RendererUnitTests, PBRTest)
 		lights.push_back(evLight);
 	}
 
-	auto camera = Camera(512.0f, 512.0f, 1.5f, 0.005f);
+	auto camera = Camera(1024u, 128u, 1.5f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, 0.0f, 25.0f });
 	camera.LookAt({ 0.0f, 0.0f, 0.0f }, Y_MINUS_AXIS);
 
@@ -257,7 +257,7 @@ TEST_F(RendererUnitTests, PBRTest)
 	settings.SecondryBounces = 1u;
 
 	const auto RenderPBRScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
-	SaveImage(RenderPBRScene, "Render_PBR.png");
+	SaveImage(RenderPBRScene.GetPixels(), "Render_PBR.png");
 }
 
 TEST_F(RendererUnitTests, SpheresTest)
@@ -431,18 +431,18 @@ TEST_F(RendererUnitTests, SpheresTest)
 		lights.push_back(evLight);
 	}
 
-	auto camera = Camera(1024.0f, 1024.0f, 1.5f, 0.005f);
+	auto camera = Camera(1024u, 1024u, 1.5f, 0.005f);
 	camera.XForm.SetPosition({ 0.0f, 15.0f, 0.0f });
 	camera.LookAt({ 0.0f, 0.0f, 0.0f }, Z_MINUS_AXIS);
 
 	RayTracer::Settings settings;
-	settings.SamplesPerPixel = 40u;
+	settings.SamplesPerPixel = 2u;
 	settings.MaxDepth = 1u;
 	settings.MaxGIDepth = 0u;
 	settings.SecondryBounces = 0u;
 
 	const auto RenderPBRScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
-	SaveImage(RenderPBRScene, "Render_Spheres.png");
+	SaveImage(RenderPBRScene.GetPixels(), "Render_Spheres.png");
 }
 
 TEST_F(RendererUnitTests, CubesTest)
@@ -511,7 +511,7 @@ TEST_F(RendererUnitTests, CubesTest)
 		lights.push_back(evLight);
 	}
 
-	auto camera = Camera(512.0f, 512.0f, 4.0f, 0.01f);
+	auto camera = Camera(512u, 512u, 4.0f, 0.01f);
 	camera.XForm.SetPosition({ -28.0f, 15.0f, -28.0f });
 	camera.LookAt({ -5.0f, 0.0f, -5.0f }, Y_MINUS_AXIS);
 
@@ -522,5 +522,5 @@ TEST_F(RendererUnitTests, CubesTest)
 	settings.SecondryBounces = 0u;
 
 	const auto RenderBlockCityScene = RayTracer(Scene(objects, lights, camera), settings).Render(&SaveImage, "Render_Update.png");
-	SaveImage(RenderBlockCityScene, "Render_Cubes.png");
+	SaveImage(RenderBlockCityScene.GetPixels(), "Render_Cubes.png");
 }

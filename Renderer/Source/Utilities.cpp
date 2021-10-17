@@ -11,13 +11,15 @@ namespace
 
 Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3& position, const bool calculate_inverse) :
     m_axis(Matrix3()),
-    m_position(position)
+    m_position(position),
+    m_inverse(Matrix3())
 {
     const float difference = direction.DotProduct(up);
     if (difference == 1.0f || difference == -1.0f)
     {
         LOG_WARNING("Warning direction and up are perpendicular when creating axis. Returning identity matrix.");
         m_axis.Identity();
+        m_inverse.Identity();
         return;
     }
 
@@ -26,9 +28,9 @@ Transform::Transform(const Vector3& direction, const Vector3& up, const Vector3&
     const auto x = z.CrossProduct(y).Normalized();
     for (Size i = 0; i < 3; ++i)
     {
-        m_axis.Set(i, 0, y[i]);
-        m_axis.Set(i, 1, z[i]);
-        m_axis.Set(i, 2, x[i]);
+        m_axis.Set(0, i, y[i]);
+        m_axis.Set(1, i, z[i]);
+        m_axis.Set(2, i, x[i]);
     }
 
     if (calculate_inverse)

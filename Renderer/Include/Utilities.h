@@ -11,14 +11,17 @@ namespace Renderer
 	public:
 		Transform() :
             m_axis(Matrix3()),
-			m_position(Vector3())
+			m_position(Vector3()),
+            m_inverse(Matrix3())
 		{
             m_axis.Identity();
+            m_inverse.Identity();
 		}
 
 		Transform(const Matrix3& axis, const Vector3& position, const bool calculate_inverse) :
             m_axis(axis),
-            m_position(position)
+            m_position(position),
+            m_inverse(Matrix3())
 		{
             if (calculate_inverse)
             {
@@ -41,12 +44,12 @@ namespace Renderer
 		void SetPosition(const Vector3& position) { m_position = position; }
 		const Matrix3& GetAxis() const { return m_axis; }
 		const Vector3& GetPosition() const { return m_position; }
-        const Matrix3& GetInverse() const { return m_axis; }
+        const Matrix<float>& GetInverse() const { return m_inverse; }
 
 	private:
-        Matrix<float> m_inverse;
 		Matrix3 m_axis;
 		Vector3 m_position;
+        Matrix<float> m_inverse;
 	};
 
 	class Ray

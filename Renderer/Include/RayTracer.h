@@ -16,7 +16,6 @@ namespace Renderer
 			Lights(std::move(Lights)),
 			Cam(camera)
 		{ 
-			Initialise();
 		}
 
 		Scene() = default;
@@ -24,8 +23,6 @@ namespace Renderer
 		Scene(const Scene&) = delete;
 		Scene(Scene&&) = delete;
 		Scene& operator=(const Scene& scene) = delete;
-		
-		void Initialise();
 
 		std::vector<std::shared_ptr<Object>> Objects;
 		std::vector<std::shared_ptr<Light>> Lights;
@@ -55,8 +52,8 @@ namespace Renderer
 		}
 		~RayTracer() = default;
 
-		Camera::Viewport Render(
-			const std::function<void(const Camera::Viewport&, const std::string&)>& save = [](const Camera::Viewport& viewport, const std::string& path) -> void {},
+        const Viewport& Render(
+			const std::function<void(const Viewport::Pixels&, const std::string&)>& save = [](const  Viewport::Pixels& viewport, const std::string& path) -> void {},
 			const std::string& path = "");
 
 		Intersection Trace(const Ray& ray, const Size depth = 0u) const;

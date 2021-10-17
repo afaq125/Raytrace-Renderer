@@ -47,17 +47,17 @@ void Plane::SetDirection(const Vector3& direction)
 
 Vector3 Plane::CalculateNormal(const Vector3& hit) const
 {
-	const float x = XForm.GetAxis().Get(0, 1);
+	const float x = XForm.GetAxis().Get(1, 0);
 	const float y = XForm.GetAxis().Get(1, 1);
-	const float z = XForm.GetAxis().Get(2, 1);
+	const float z = XForm.GetAxis().Get(1, 2);
 	return { x, y, z };
 }
 
 Intersection Plane::Intersect(const Ray& ray) const 
 {
-	const float x = XForm.GetAxis().Get(0, 1);
+	const float x = XForm.GetAxis().Get(1, 0);
 	const float y = XForm.GetAxis().Get(1, 1);
-	const float z = XForm.GetAxis().Get(2, 1);
+	const float z = XForm.GetAxis().Get(1, 2);
 	const Vector3 normal = { x, y, z };
 
 	const auto difference = ray.GetDirection().DotProduct(normal);

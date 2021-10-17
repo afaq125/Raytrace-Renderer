@@ -32,6 +32,7 @@ set(SOURCE_FILES
     ${PROJECT_DIR}/Include/ThreadPool.h
     ${PROJECT_DIR}/Include/Utilities.h
     ${PROJECT_DIR}/Include/Vector.h
+    ${PROJECT_DIR}/Include/Viewport.h
     ${PROJECT_DIR}/Source/Camera.cpp
     ${PROJECT_DIR}/Source/Lights.cpp
     ${PROJECT_DIR}/Source/Logger.cpp
@@ -41,7 +42,8 @@ set(SOURCE_FILES
     ${PROJECT_DIR}/Source/Renderer.cpp
     ${PROJECT_DIR}/Source/Shader.cpp
     ${PROJECT_DIR}/Source/Utilities.cpp
-    ${PROJECT_DIR}/Source/Vector.cpp)
+    ${PROJECT_DIR}/Source/Vector.cpp
+    ${PROJECT_DIR}/Source/Viewport.cpp)
 
 set(TEST_INCLUDE_FILES
     ${INCLUDE_FILES}

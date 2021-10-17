@@ -8,8 +8,8 @@ Vector3 Texture::Sample(const float u, const float v) const
 {
 	const auto rows = static_cast<float>(Pixels[0].Rows());
 	const auto columns = static_cast<float>(Pixels[0].Columns());
-	const Size x = static_cast<Size>(u * rows);
-	const Size y = static_cast<Size>(v * columns);
+	const Size x = static_cast<Size>(u * columns);
+	const Size y = static_cast<Size>(v * rows);
 	return { Pixels[0].Get(x, y), Pixels[1].Get(x, y), Pixels[2].Get(x, y) };
 }
 
@@ -17,8 +17,8 @@ void Texture::SetPixel(const float u, const float v, const Vector3& rgb)
 {
 	const auto rows = static_cast<float>(Pixels[0].Rows());
 	const auto columns = static_cast<float>(Pixels[0].Columns());
-	const Size x = static_cast<Size>(u * rows);
-	const Size y = static_cast<Size>(v * columns);
+	const Size x = static_cast<Size>(u * columns);
+	const Size y = static_cast<Size>(v * rows);
 	Pixels[0].Set(x, y, rgb[0]);
 	Pixels[1].Set(x, y, rgb[1]);
 	Pixels[2].Set(x, y, rgb[2]);

@@ -6,7 +6,7 @@ namespace Renderer
     class AsyncQueue
     {
     public:
-        AsyncQueue(std::function<void(T)> callable) :
+        AsyncQueue(std::function<void(const T&)> callable) :
             m_callable(std::move(callable)),
             m_run(true)
         {
@@ -73,6 +73,6 @@ namespace Renderer
         std::atomic_bool m_run;
 
         std::queue<T> m_queue;
-        std::function<void(T)> m_callable;
+        std::function<void(const T&)> m_callable;
     };
 }

@@ -14,9 +14,9 @@ void SaveImage(const std::array<Matrix<float>, 3>& image, const std::string& pat
 	{
 		for (int j = 0; j < h; j++)
 		{
-			color.rgbRed = static_cast<BYTE>(std::round(image[0].Get(j, i) * 255.0));
-			color.rgbGreen = static_cast<BYTE>(std::round(image[1].Get(j, i) * 255.0));
-			color.rgbBlue = static_cast<BYTE>(std::round(image[2].Get(j, i) * 255.0));
+			color.rgbRed = static_cast<BYTE>(std::round(image[0].Get(i, j) * 255.0));
+			color.rgbGreen = static_cast<BYTE>(std::round(image[1].Get(i, j) * 255.0));
+			color.rgbBlue = static_cast<BYTE>(std::round(image[2].Get(i, j) * 255.0));
 			FreeImage_SetPixelColor(bitmapOutput, i, j, &color);
 		}
 	}

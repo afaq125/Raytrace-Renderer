@@ -124,6 +124,8 @@ namespace Renderer
     class Logger : public Singleton<Logger>
     {
     public:
+        using LoggerAsyncQueue = AsyncQueue<std::pair<BaseLogger::Verbosity, std::string>>;
+
         Logger() :
             m_console_logger(std::make_unique<ConsoleLogger>()),
             m_file_logger(std::make_unique<FileLogger>())
@@ -139,16 +141,16 @@ namespace Renderer
 
         inline ConsoleLogger& GetConsoleLogger() { return *m_console_logger.get(); }
         inline FileLogger& GetFileLogger() { return *m_file_logger.get(); }
-        inline AsyncQueue<std::string>& GetQueue() { return m_queue; }
+        inline LoggerAsyncQueue& GetQueue() { return m_queue; }
 
     private:
         std::unique_ptr<ConsoleLogger> m_console_logger;
         std::unique_ptr<FileLogger> m_file_logger;
 
-        AsyncQueue<std::string> m_queue = ([&](std::string line)
+        LoggerAsyncQueue m_queue = ([&](const auto& line)
         {
-            m_console_logger->WriteLine(BaseLogger::Verbosity::Info, line);
-            m_file_logger->WriteLine(BaseLogger::Verbosity::Info, line);
+            m_console_logger->WriteLine(line.first, line.second);
+            m_file_logger->WriteLine(line.first, line.second);
         });
     };
 

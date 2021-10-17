@@ -13,23 +13,11 @@ namespace
     }
 }
 
-void Scene::Initialise()
-{
-    for (const auto& light : Lights)
-    {
-        std::shared_ptr<Lights::Area> area = std::dynamic_pointer_cast<Lights::Area>(light);
-        if (area != nullptr && area->RenderGeometry)
-        {
-            Objects.push_back(area->Grid);
-        }
-    }
-}
-
-Camera::Viewport RayTracer::Render(
-    const std::function<void(const Camera::Viewport&, const std::string&)>& save,
+const Viewport& RayTracer::Render(
+    const std::function<void(const  Viewport::Pixels&, const std::string&)>& save,
     const std::string& path)
 {
-    std::vector<Size> indicies(static_cast<Size>(mCamera.GetViewportArea()));
+    std::vector<Size> indicies(static_cast<Size>(mCamera.GetViewport().Area()));
     std::iota(indicies.begin(), indicies.end(), 0u);
     std::shuffle(indicies.begin(), indicies.end(), std::mt19937{ std::random_device{}() });
 
@@ -47,14 +35,14 @@ Camera::Viewport RayTracer::Render(
         colour *= 1.0f / static_cast<float>(mSettings.SamplesPerPixel);
         colour.Clamp(0.0f, 0.9999f);
 
-        mCamera.SetPixel(index, colour[0], colour[1], colour[2]);
+        mCamera.GetViewport().SetPixel(index, colour[0], colour[1], colour[2]);
     };
 
     const auto start = CurrentTime();
 
     // Render
-    const Size buckets = static_cast<Size>(mCamera.GetViewportArea());
-    ThreadPool::RunWithCallback(job, [&]() { save(mCamera.GetViewport(), path); std::this_thread::sleep_for(std::chrono::seconds(2)); }, buckets);
+    const Size buckets = static_cast<Size>(mCamera.GetViewport().Area());
+    ThreadPool::RunWithCallback(job, [&]() { save(mCamera.GetViewport().GetPixels(), path); std::this_thread::sleep_for(std::chrono::seconds(2)); }, buckets);
 
     const auto end = CurrentTime();
     LOG_INFO("Start: ", start.count());

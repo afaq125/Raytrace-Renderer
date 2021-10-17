@@ -372,5 +372,5 @@ void ConsoleLogger::WriteLine(const Verbosity verbosity, const std::string& line
 
 void Logger::WriteLine(const BaseLogger::Verbosity verbosity, const std::string& line)
 {
-    m_queue.Push(line);
+    m_queue.Push({ verbosity, line });
 }

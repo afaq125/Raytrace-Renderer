@@ -43,5 +43,6 @@
 #include "Shader.h"
 #include "Objects.h"
 #include "Lights.h"
+#include "Viewport.h"
 #include "Camera.h"
 #include "RayTracer.h"
